@@ -229,6 +229,7 @@ export function AuthScreen({ navigation, route }: any) {
             label="I am a"
             value={value}
             onChange={onChange}
+            hint="This cannot be changed after you sign up."
             error={firstError(signupForm.formState.errors, "campusRole")}
           />
         )}

@@ -18,9 +18,10 @@ type Props = {
   value: CampusRole;
   onChange: (value: CampusRole) => void;
   error?: string;
+  hint?: string;
 };
 
-export function RoleSelectField({ label = "I am a", value, onChange, error }: Props) {
+export function RoleSelectField({ label = "I am a", value, onChange, error, hint }: Props) {
   const [open, setOpen] = useState(false);
   const display = formatCampusRole(value);
 
@@ -41,6 +42,7 @@ export function RoleSelectField({ label = "I am a", value, onChange, error }: Pr
             ),
           )}
         </View>
+        {hint ? <Text style={styles.hint}>{hint}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
     );
@@ -57,6 +59,7 @@ export function RoleSelectField({ label = "I am a", value, onChange, error }: Pr
         <Text style={styles.valueText}>{display}</Text>
         <AppIcon name="chevron-down" size={18} color={colors.textMuted} />
       </Pressable>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -117,6 +120,7 @@ const styles = StyleSheet.create({
   },
   inputRowError: { borderColor: colors.danger },
   valueText: { fontSize: 15, color: colors.text, fontWeight: "600" },
+  hint: { fontSize: 12, color: colors.textMuted, marginTop: 6, lineHeight: 17 },
   error: { marginTop: 6, fontSize: 12, color: colors.danger },
   backdrop: {
     flex: 1,
