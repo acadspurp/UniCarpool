@@ -5,17 +5,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
-    }
-
     function isCampusVerified() {
       return request.auth.token.campusVerified == true
         || request.auth.token.email.matches(".*@iskolarngbayan\\.pup\\.edu\\.ph$");
     }
 
     function isVerifiedCampusUser() {
-      return isSignedIn() && isEmailVerified() && isCampusVerified();
+      return isSignedIn() && isCampusVerified();
     }
 
     match /users/{uid} {
