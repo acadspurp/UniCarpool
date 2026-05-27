@@ -2,26 +2,37 @@ import type { BottomTabHeaderProps } from "@react-navigation/bottom-tabs";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppIcon } from "../ui/AppIcon";
 import { useMobileShell } from "../../context/MobileShellContext";
+import { useResponsive } from "../../hooks/useResponsive";
+import { navigateToMainTab } from "../../navigation/rootNavigation";
 import { colors } from "../../theme/colors";
 
 export function MainAppHeader(_props: BottomTabHeaderProps) {
+  const { isWide } = useResponsive();
   const { openMenu, openNotifications } = useMobileShell();
+  const showMenu = !isWide;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.left}>
+        {showMenu ? (
+          <Pressable
+            style={styles.iconBtn}
+            onPress={openMenu}
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
+          >
+            <AppIcon name="menu" size={24} color={colors.primary} />
+          </Pressable>
+        ) : null}
         <Pressable
-          style={styles.iconBtn}
-          onPress={openMenu}
-          accessibilityLabel="Open menu"
+          style={[styles.brandWrap, !showMenu && styles.brandWrapFlush]}
+          onPress={() => navigateToMainTab("Home")}
+          accessibilityLabel="Go to home"
           accessibilityRole="button"
         >
-          <AppIcon name="menu" size={24} color={colors.primary} />
-        </Pressable>
-        <View style={styles.brandWrap}>
           <Text style={styles.brand}>UniCarpool</Text>
           <Text style={styles.brandSub}>Campus rides</Text>
-        </View>
+        </Pressable>
       </View>
       <Pressable
         style={styles.iconBtn}
@@ -48,6 +59,7 @@ const styles = StyleSheet.create({
   },
   left: { flexDirection: "row", alignItems: "center", flex: 1, minWidth: 0 },
   brandWrap: { marginLeft: 8, flex: 1 },
+  brandWrapFlush: { marginLeft: 0 },
   brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
   brandSub: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   iconBtn: {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppIcon } from "../components/ui/AppIcon";
 import { Controller, useForm } from "react-hook-form";
 import { ScreenContainer } from "../components/ScreenContainer";
@@ -9,6 +9,7 @@ import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
 import { createOrUpdateProfile } from "../services/profile";
 import { logout, CAMPUS_DOMAIN } from "../services/auth";
+import { confirmAction, showMessage } from "../utils/alert";
 import { colors } from "../theme/colors";
 
 type ProfileValues = {
@@ -65,19 +66,22 @@ export function ProfileScreen() {
             }
           : {}),
       });
-      Alert.alert("Profile updated", "Your information has been saved.");
+      showMessage("Profile updated", "Your information has been saved.");
     } catch (error: unknown) {
-      Alert.alert("Update failed", error instanceof Error ? error.message : "Please try again.");
+      showMessage("Update failed", error instanceof Error ? error.message : "Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const onLogout = () => {
-    Alert.alert("Log out?", "You will need to sign in again to use UniCarpool.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log Out", style: "destructive", onPress: logout },
-    ]);
+  const onLogout = async () => {
+    const confirmed = await confirmAction({
+      title: "Log out?",
+      message: "You will need to sign in again to use UniCarpool.",
+      confirmLabel: "Log Out",
+      destructive: true,
+    });
+    if (confirmed) await logout();
   };
 
   return (

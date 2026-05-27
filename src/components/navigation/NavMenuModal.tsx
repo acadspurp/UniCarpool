@@ -1,13 +1,11 @@
+import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { AppIcon, type AppIconName } from "../ui/AppIcon";
 import { useMobileShell } from "../../context/MobileShellContext";
+import { getActiveMainTab, navigateToMainTab, type MainTabName } from "../../navigation/rootNavigation";
 import { colors } from "../../theme/colors";
 
-type TabRoute = "Home" | "FindRide" | "MyRides" | "Profile";
-
-const MENU_ITEMS: { route: TabRoute; label: string; icon: AppIconName }[] = [
+const MENU_ITEMS: { route: MainTabName; label: string; icon: AppIconName }[] = [
   { route: "Home", label: "Home", icon: "home" },
   { route: "FindRide", label: "Find Ride", icon: "search" },
   { route: "MyRides", label: "My Rides", icon: "car" },
@@ -16,19 +14,26 @@ const MENU_ITEMS: { route: TabRoute; label: string; icon: AppIconName }[] = [
 
 export function NavMenuModal() {
   const { menuOpen, closeMenu } = useMobileShell();
-  const navigation = useNavigation<BottomTabNavigationProp<Record<TabRoute, undefined>>>();
-  const route = useRoute();
-  const active = route.name as TabRoute;
+  const [active, setActive] = useState<MainTabName>("Home");
 
-  const goTo = (name: TabRoute) => {
+  useEffect(() => {
+    if (menuOpen) setActive(getActiveMainTab());
+  }, [menuOpen]);
+
+  const goTo = (name: MainTabName) => {
     closeMenu();
-    navigation.navigate(name);
+    navigateToMainTab(name);
   };
 
   return (
     <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={closeMenu}>
-      <Pressable style={styles.backdrop} onPress={closeMenu} accessibilityLabel="Close menu">
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+      <View style={styles.backdrop}>
+        <Pressable
+          style={styles.backdropTap}
+          onPress={closeMenu}
+          accessibilityLabel="Close menu"
+        />
+        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <Text style={styles.sheetTitle}>Menu</Text>
           {MENU_ITEMS.map((item) => {
             const selected = active === item.route;
@@ -47,8 +52,8 @@ export function NavMenuModal() {
               </Pressable>
             );
           })}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -61,6 +66,9 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 14,
   },
+  backdropTap: {
+    ...StyleSheet.absoluteFillObject,
+  },
   sheet: {
     backgroundColor: colors.surface,
     borderRadius: 16,
@@ -70,6 +78,7 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     width: "100%",
     alignSelf: "flex-start",
+    zIndex: 1,
   },
   sheetTitle: {
     fontSize: 12,

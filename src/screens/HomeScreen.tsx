@@ -1,40 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AppIcon } from "../components/ui/AppIcon";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
-import { NotificationsPanel } from "../components/navigation/NotificationsPanel";
-import { useMobileShell } from "../context/MobileShellContext";
-import { useResponsive } from "../hooks/useResponsive";
 import { useAuthStore } from "../store/authStore";
 import { colors } from "../theme/colors";
 
 export function HomeScreen({ navigation }: any) {
   const { user } = useAuthStore();
-  const { isWide } = useResponsive();
-  const { openNotifications } = useMobileShell();
   const firstName = user?.displayName?.trim().split(/\s+/)[0] || "there";
 
   return (
     <ScreenContainer>
-      {isWide && (
-        <>
-          <View style={styles.topBar}>
-            <View>
-              <Text style={styles.brand}>UniCarpool</Text>
-              <Text style={styles.brandSub}>Campus rides</Text>
-            </View>
-            <Pressable
-              style={styles.iconBtn}
-              accessibilityLabel="Notifications"
-              onPress={openNotifications}
-            >
-              <AppIcon name="notifications-outline" size={22} color={colors.primary} />
-            </Pressable>
-          </View>
-          <NotificationsPanel />
-        </>
-      )}
-
       <View style={styles.heroCard}>
         <Text style={styles.greeting}>Hello, {firstName}!</Text>
         <Text style={styles.title}>What would you like to do?</Text>
@@ -74,24 +50,6 @@ export function HomeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  brand: { fontSize: 20, fontWeight: "800", color: colors.primary },
-  brandSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   heroCard: {
     backgroundColor: colors.primary,
     borderRadius: 18,

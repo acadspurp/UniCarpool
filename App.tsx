@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { AppNavigator } from "./src/navigation/AppNavigator";
+import { rootNavigationRef } from "./src/navigation/rootNavigation";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 
 if (Platform.OS !== "web") {
@@ -31,7 +32,7 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider style={styles.root}>
         <View style={styles.root}>
-          <NavigationContainer>
+          <NavigationContainer ref={rootNavigationRef}>
             <StatusBar style="dark" />
             <AppNavigator />
           </NavigationContainer>

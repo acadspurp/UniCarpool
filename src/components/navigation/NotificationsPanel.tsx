@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useMobileShell } from "../../context/MobileShellContext";
 import { useAuthStore } from "../../store/authStore";
 import { subscribeMyBookings, subscribeDriverBookings } from "../../services/bookings";
@@ -80,28 +88,40 @@ export function NotificationsPanel() {
     [riderBookings, driverBookings],
   );
 
+  if (!notificationsOpen) return null;
+
   return (
     <Modal
-      visible={notificationsOpen}
+      visible
       transparent
       animationType="slide"
       onRequestClose={closeNotifications}
+      statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={closeNotifications}>
-        <Pressable style={styles.panel} onPress={(e) => e.stopPropagation()}>
+      <View style={styles.root}>
+        <Pressable
+          style={styles.backdropTap}
+          onPress={closeNotifications}
+          accessibilityLabel="Close notifications"
+        />
+        <View style={[styles.panel, Platform.OS === "web" && styles.panelWeb]}>
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Notifications</Text>
             <Pressable onPress={closeNotifications} hitSlop={8}>
               <Text style={styles.close}>Close</Text>
             </Pressable>
           </View>
-          <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
             {logs.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={styles.emptyEmoji}>🔔</Text>
-                <Text style={styles.emptyTitle}>No activity yet</Text>
+                <Text style={styles.emptyTitle}>No notifications yet</Text>
                 <Text style={styles.emptyText}>
-                  Ride requests and booking updates will show up here.
+                  Ride requests and booking updates will appear here when you have activity.
                 </Text>
               </View>
             ) : (
@@ -113,26 +133,34 @@ export function NotificationsPanel() {
               ))
             )}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
+  },
+  backdropTap: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   panel: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "72%",
+    minHeight: 220,
     borderWidth: 1,
     borderColor: colors.border,
     borderBottomWidth: 0,
+    zIndex: 2,
+  },
+  panelWeb: {
+    maxHeight: "72vh" as unknown as number,
   },
   panelHeader: {
     flexDirection: "row",
@@ -146,7 +174,8 @@ const styles = StyleSheet.create({
   },
   panelTitle: { fontSize: 18, fontWeight: "800", color: colors.text },
   close: { fontSize: 14, fontWeight: "600", color: colors.primary },
-  scroll: { paddingHorizontal: 18, paddingBottom: 24 },
+  scroll: { flexGrow: 0 },
+  scrollContent: { paddingHorizontal: 18, paddingBottom: 28, flexGrow: 1 },
   empty: { alignItems: "center", paddingVertical: 36, paddingHorizontal: 12 },
   emptyEmoji: { fontSize: 36, marginBottom: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 6 },

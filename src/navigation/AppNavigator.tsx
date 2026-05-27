@@ -50,11 +50,9 @@ function MainTabs() {
     <MobileShellProvider>
       <Tabs.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.primary,
-          headerTitleStyle: { fontWeight: "700", fontSize: 17 },
-          headerShown: isWide,
-          header: isWide ? undefined : (props) => <MainAppHeader {...props} />,
+          headerShown: true,
+          header: (props) => <MainAppHeader {...props} />,
+          title: "",
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginBottom: Platform.OS === "ios" ? 0 : 4 },
@@ -65,8 +63,6 @@ function MainTabs() {
           name="Home"
           component={HomeScreen}
           options={{
-            headerShown: !isWide,
-            title: "",
             tabBarIcon: tabIcon("home"),
           }}
         />
@@ -74,7 +70,6 @@ function MainTabs() {
           name="FindRide"
           component={FindRideScreen}
           options={{
-            title: isWide ? "Find Ride" : "",
             tabBarLabel: "Find Ride",
             tabBarIcon: tabIcon("search"),
           }}
@@ -83,7 +78,6 @@ function MainTabs() {
           name="MyRides"
           component={MyRidesScreen}
           options={{
-            title: isWide ? "My Rides" : "",
             tabBarLabel: "My Rides",
             tabBarIcon: tabIcon("car"),
           }}
@@ -92,17 +86,12 @@ function MainTabs() {
           name="Profile"
           component={ProfileScreen}
           options={{
-            title: isWide ? "Profile" : "",
             tabBarIcon: tabIcon("person"),
           }}
         />
       </Tabs.Navigator>
-      {!isWide && (
-        <>
-          <NavMenuModal />
-          <NotificationsPanel />
-        </>
-      )}
+      {!isWide && <NavMenuModal />}
+      <NotificationsPanel />
     </MobileShellProvider>
   );
 }
