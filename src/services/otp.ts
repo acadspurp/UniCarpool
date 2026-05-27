@@ -47,7 +47,7 @@ async function otpRequest<T>(path: string, body?: { code: string }): Promise<T> 
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new OtpApiError(
-        "The verification server took too long to respond (Render may be waking up on free tier). Tap Resend and wait 1-2 minutes.",
+        "Tap Resend and wait 1-2 minutes.",
         "deadline-exceeded",
       );
     }
