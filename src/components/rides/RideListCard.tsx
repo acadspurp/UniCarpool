@@ -33,6 +33,9 @@ export function RideListCard({ ride, onPress, actionLabel = "Request seat" }: Pr
         {ride.origin.name} → {ride.destination.name}
       </Text>
       <Text style={styles.pickup}>Pickup: {ride.origin.name}</Text>
+      {ride.priceShareNote ? (
+        <Text style={styles.price}>{ride.priceShareNote}</Text>
+      ) : null}
 
       <PrimaryButton label={actionLabel.toUpperCase()} onPress={onPress} />
     </View>
@@ -70,5 +73,6 @@ const styles = StyleSheet.create({
   },
   seatsText: { fontSize: 11, fontWeight: "700", color: colors.primaryDark },
   route: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 },
-  pickup: { fontSize: 13, color: colors.textMuted, marginBottom: 12 },
+  pickup: { fontSize: 13, color: colors.textMuted, marginBottom: 4 },
+  price: { fontSize: 14, fontWeight: "700", color: colors.primary, marginBottom: 12 },
 });

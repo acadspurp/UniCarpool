@@ -7,6 +7,7 @@ import { TextField } from "../components/ui/TextField";
 import { DatePickerField } from "../components/ui/DatePickerField";
 import { TimePickerField } from "../components/ui/TimePickerField";
 import { StepperField } from "../components/ui/StepperField";
+import { PerPersonPriceField } from "../components/ui/PerPersonPriceField";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { useAuthStore } from "../store/authStore";
 import { postRide } from "../services/rides";
@@ -16,6 +17,7 @@ import { colors } from "../theme/colors";
 type PostRideValues = {
   origin: string;
   destination: string;
+  pricePerPerson: string;
   notes: string;
 };
 
@@ -47,6 +49,7 @@ export function PostRideScreen({ navigation }: any) {
     defaultValues: {
       origin: "",
       destination: "",
+      pricePerPerson: "",
       notes: "",
     },
   });
@@ -55,6 +58,10 @@ export function PostRideScreen({ navigation }: any) {
     if (!user) return;
     if (!values.origin.trim() || !values.destination.trim()) {
       showMessage("Missing details", "Please enter origin and destination.");
+      return;
+    }
+    if (!values.pricePerPerson.trim() || Number(values.pricePerPerson) <= 0) {
+      showMessage("Missing amount", "Please enter how much each person should pay.");
       return;
     }
     try {
@@ -67,7 +74,7 @@ export function PostRideScreen({ navigation }: any) {
         availableSeats,
         notes: values.notes.trim(),
         status: "open",
-        priceShareNote: "Cost sharing only; no in-app payments.",
+        priceShareNote: `₱${values.pricePerPerson.trim()} per person`,
       });
       showMessage("Ride posted", "Your ride is now visible to riders.");
       navigation.goBack();
@@ -127,6 +134,13 @@ export function PostRideScreen({ navigation }: any) {
           onChange={setAvailableSeats}
           min={1}
           max={8}
+        />
+        <Controller
+          control={control}
+          name="pricePerPerson"
+          render={({ field: { onChange, value } }) => (
+            <PerPersonPriceField value={value} onChange={onChange} />
+          )}
         />
         <Controller
           control={control}
