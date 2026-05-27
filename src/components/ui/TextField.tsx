@@ -5,15 +5,23 @@ type Props = TextInputProps & {
   label?: string;
   error?: string;
   hint?: string;
+  /** Force typed text to uppercase (e.g. origin / destination). */
+  uppercase?: boolean;
 };
 
-export function TextField({ label, error, hint, style, ...props }: Props) {
+export function TextField({ label, error, hint, uppercase, style, onChangeText, ...props }: Props) {
+  const handleChange = (text: string) => {
+    onChangeText?.(uppercase ? text.toUpperCase() : text);
+  };
+
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error && styles.inputError, style]}
+        autoCapitalize={uppercase ? "characters" : props.autoCapitalize}
+        onChangeText={handleChange}
         {...props}
       />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}

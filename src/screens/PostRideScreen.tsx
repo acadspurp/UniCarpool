@@ -280,9 +280,10 @@ export function PostRideScreen({ navigation }: any) {
           render={({ field: { onChange, value } }) => (
             <TextField
               label="Origin"
-              placeholder="e.g. PUP Main Campus"
+              placeholder="e.g. PUP MAIN CAMPUS"
               value={value}
               onChangeText={onChange}
+              uppercase
             />
           )}
         />
@@ -292,9 +293,10 @@ export function PostRideScreen({ navigation }: any) {
           render={({ field: { onChange, value } }) => (
             <TextField
               label="Destination"
-              placeholder="e.g. SM North"
+              placeholder="e.g. SM NORTH"
               value={value}
               onChangeText={onChange}
+              uppercase
             />
           )}
         />
