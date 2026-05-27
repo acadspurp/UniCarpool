@@ -25,11 +25,15 @@ export function subscribeOpenRides(
   cb: (rides: Ride[]) => void,
   destinationName?: string,
 ) {
-  const baseQuery = destinationName
+  const normalizedDestination = destinationName?.trim()
+    ? destinationName.trim().toUpperCase()
+    : undefined;
+
+  const baseQuery = normalizedDestination
     ? query(
         collection(db, "rides"),
         where("status", "==", "open"),
-        where("destination.name", "==", destinationName),
+        where("destination.name", "==", normalizedDestination),
         orderBy("departureTime", "asc"),
       )
     : query(
