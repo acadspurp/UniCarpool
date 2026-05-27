@@ -1,5 +1,12 @@
 export type CampusRole = "student" | "faculty" | "staff";
 
+export type VehicleInfo = {
+  make: string;
+  model: string;
+  color: string;
+  plate: string;
+};
+
 export type Profile = {
   uid: string;
   fullName: string;
@@ -9,12 +16,7 @@ export type Profile = {
   phone: string;
   photoURL?: string;
   isVerifiedCampus: boolean;
-  vehicle?: {
-    make: string;
-    model: string;
-    color: string;
-    plate: string;
-  };
+  vehicle?: VehicleInfo;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,6 +30,7 @@ export type Ride = {
   availableSeats: number;
   priceShareNote?: string;
   notes?: string;
+  vehicle?: VehicleInfo;
   status: "open" | "full" | "cancelled" | "completed";
   routePolyline?: string;
   createdAt: string;

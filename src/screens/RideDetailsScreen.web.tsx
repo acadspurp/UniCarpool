@@ -6,6 +6,7 @@ import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
 import { requestBooking } from "../services/bookings";
 import { ensureChat } from "../services/chat";
+import { formatVehicle } from "../utils/vehicle";
 import { colors } from "../theme/colors";
 
 export function RideDetailsScreen({ route, navigation }: any) {
@@ -41,6 +42,23 @@ export function RideDetailsScreen({ route, navigation }: any) {
         <Info label="Departure" value={String(ride.departureTime)} />
         <Info label="Seats left" value={String(ride.availableSeats)} />
       </View>
+
+      {ride.priceShareNote ? (
+        <View style={styles.infoCardWide}>
+          <Text style={styles.infoLabel}>Share per person</Text>
+          <Text style={styles.infoValue}>{ride.priceShareNote}</Text>
+        </View>
+      ) : null}
+
+      {ride.vehicle ? (
+        <View style={styles.vehicleCard}>
+          <Text style={styles.vehicleTitle}>Vehicle (for your safety)</Text>
+          <Text style={styles.vehicleText}>{formatVehicle(ride.vehicle)}</Text>
+          <Text style={styles.vehicleHint}>
+            Shared by the driver so you can identify the car at pickup.
+          </Text>
+        </View>
+      ) : null}
 
       {ride.notes ? (
         <View style={styles.notesCard}>
@@ -83,6 +101,25 @@ const styles = StyleSheet.create({
   routeLabel: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginBottom: 4 },
   route: { color: colors.textOnPrimary, fontSize: 20, fontWeight: "800" },
   infoRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  infoCardWide: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  vehicleCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  vehicleTitle: { fontSize: 14, fontWeight: "700", color: colors.primaryDark, marginBottom: 6 },
+  vehicleText: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 6 },
+  vehicleHint: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   infoCard: {
     flex: 1,
     backgroundColor: colors.surface,

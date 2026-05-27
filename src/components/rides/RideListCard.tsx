@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Ride } from "../../types/models";
 import { formatDepartureLabel } from "../../utils/date";
+import { formatVehicle } from "../../utils/vehicle";
 import { colors } from "../../theme/colors";
 import { PrimaryButton } from "../ui/PrimaryButton";
 
@@ -35,6 +36,9 @@ export function RideListCard({ ride, onPress, actionLabel = "Request seat" }: Pr
       <Text style={styles.pickup}>Pickup: {ride.origin.name}</Text>
       {ride.priceShareNote ? (
         <Text style={styles.price}>{ride.priceShareNote}</Text>
+      ) : null}
+      {ride.vehicle ? (
+        <Text style={styles.vehicle}>Vehicle: {formatVehicle(ride.vehicle)}</Text>
       ) : null}
 
       <PrimaryButton label={actionLabel.toUpperCase()} onPress={onPress} />
@@ -74,5 +78,6 @@ const styles = StyleSheet.create({
   seatsText: { fontSize: 11, fontWeight: "700", color: colors.primaryDark },
   route: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 },
   pickup: { fontSize: 13, color: colors.textMuted, marginBottom: 4 },
-  price: { fontSize: 14, fontWeight: "700", color: colors.primary, marginBottom: 12 },
+  price: { fontSize: 14, fontWeight: "700", color: colors.primary, marginBottom: 4 },
+  vehicle: { fontSize: 13, color: colors.textMuted, marginBottom: 12, lineHeight: 18 },
 });

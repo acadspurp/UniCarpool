@@ -1,13 +1,17 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
 
+const DEFAULT_LABEL =
+  "I agree that UniCarpool may use my account information for verification, ride matching, and related campus carpool services, in line with applicable data privacy practices.";
+
 type Props = {
   checked: boolean;
   onToggle: () => void;
   error?: string;
+  label?: string;
 };
 
-export function PrivacyConsent({ checked, onToggle, error }: Props) {
+export function PrivacyConsent({ checked, onToggle, error, label = DEFAULT_LABEL }: Props) {
   return (
     <View style={styles.wrap}>
       <Pressable
@@ -19,10 +23,7 @@ export function PrivacyConsent({ checked, onToggle, error }: Props) {
         <View style={[styles.box, checked && styles.boxChecked]}>
           {checked ? <Text style={styles.check}>✓</Text> : null}
         </View>
-        <Text style={styles.label}>
-          I agree that UniCarpool may use my account information for verification, ride matching,
-          and related campus carpool services, in line with applicable data privacy practices.
-        </Text>
+        <Text style={styles.label}>{label}</Text>
       </Pressable>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -31,7 +32,7 @@ export function PrivacyConsent({ checked, onToggle, error }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 16 },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  row: { flexDirection: "row", alignItems: "flex-start" },
   box: {
     width: 22,
     height: 22,
@@ -48,6 +49,6 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   check: { color: colors.textOnPrimary, fontSize: 14, fontWeight: "800" },
-  label: { flex: 1, fontSize: 12, lineHeight: 18, color: colors.textMuted },
+  label: { flex: 1, fontSize: 12, lineHeight: 18, color: colors.textMuted, marginLeft: 12 },
   error: { marginTop: 6, fontSize: 12, color: colors.danger, marginLeft: 34 },
 });
