@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenContainer } from "../components/ScreenContainer";
-import { SectionHeader } from "../components/ui/SectionHeader";
+import { EmptyState } from "../components/ui/EmptyState";
+import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
 import { subscribeMyBookings } from "../services/bookings";
 import { subscribeDriverRides } from "../services/rides";
 import { Booking, Ride } from "../types/models";
+import { formatDepartureLabel } from "../utils/date";
 import { colors } from "../theme/colors";
 
-export function MyRidesScreen() {
+export function MyRidesScreen({ navigation }: any) {
   const { user } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [postedRides, setPostedRides] = useState<Ride[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -23,38 +26,75 @@ export function MyRidesScreen() {
     };
   }, [user]);
 
+  const filterByHistory = <T extends { status: string }>(items: T[]) =>
+    showHistory
+      ? items.filter((i) => i.status === "completed" || i.status === "cancelled")
+      : items.filter((i) => i.status !== "completed" && i.status !== "cancelled");
+
+  const visibleRides = filterByHistory(postedRides);
+  const visibleBookings = filterByHistory(bookings);
+
   return (
     <ScreenContainer>
-      <SectionHeader
-        title="My rides"
-        subtitle="Rides you posted as a driver and bookings you requested as a rider."
-      />
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.title}>My rides</Text>
+          <Text style={styles.subtitle}>Trips you offer and seats you booked.</Text>
+        </View>
+        <Pressable onPress={() => setShowHistory((v) => !v)} style={styles.historyToggle}>
+          <Text style={styles.historyText}>{showHistory ? "Active" : "History"}</Text>
+        </Pressable>
+      </View>
 
-      <Text style={styles.sectionLabel}>Posted rides (Driver)</Text>
-      {postedRides.length === 0 ? (
-        <Text style={styles.empty}>No posted rides yet.</Text>
+      <Text style={styles.sectionLabel}>🚗 Rides I'm offering</Text>
+      {visibleRides.length === 0 ? (
+        <EmptyState
+          emoji="🛞"
+          title={showHistory ? "No ride history" : "No posted rides"}
+          message={
+            showHistory
+              ? "Completed or cancelled rides you offered will appear here."
+              : "Post a ride from Home to start offering seats."
+          }
+        />
       ) : (
-        postedRides.map((ride) => (
+        visibleRides.map((ride) => (
           <View key={ride.id} style={styles.card}>
             <Text style={styles.route}>
               {ride.origin.name} → {ride.destination.name}
             </Text>
-            <Text style={styles.meta}>Departure: {ride.departureTime}</Text>
-            <View style={[styles.badge, statusStyle(ride.status)]}>
-              <Text style={styles.badgeText}>{ride.status}</Text>
+            <Text style={styles.meta}>{formatDepartureLabel(ride.departureTime)}</Text>
+            <View style={styles.cardFooter}>
+              <View style={[styles.badge, statusStyle(ride.status)]}>
+                <Text style={styles.badgeText}>{ride.status}</Text>
+              </View>
+              <OutlineButton
+                label="VIEW DETAILS"
+                onPress={() => navigation.navigate("RideDetails", { ride })}
+              />
             </View>
           </View>
         ))
       )}
 
-      <Text style={[styles.sectionLabel, styles.sectionGap]}>My bookings (Rider)</Text>
-      {bookings.length === 0 ? (
-        <Text style={styles.empty}>No bookings yet.</Text>
+      <Text style={[styles.sectionLabel, styles.sectionGap]}>💺 Rides I've booked</Text>
+      {visibleBookings.length === 0 ? (
+        <EmptyState
+          emoji="🪑"
+          title={showHistory ? "No booking history" : "No bookings yet"}
+          message={
+            showHistory
+              ? "Past bookings will show up here once completed or cancelled."
+              : "Find a ride and request a seat to see your bookings here."
+          }
+        />
       ) : (
-        bookings.map((booking) => (
-          <View key={booking.id} style={styles.card}>
-            <Text style={styles.route}>Ride ID: {booking.rideId}</Text>
-            <Text style={styles.meta}>Seats: {booking.seatsRequested}</Text>
+        visibleBookings.map((booking) => (
+          <View key={booking.id} style={[styles.card, styles.bookingCard]}>
+            <Text style={styles.route}>Booking · {booking.seatsRequested} seat(s)</Text>
+            <Text style={styles.meta}>
+              Ride ID: {booking.rideId ? `${booking.rideId.slice(0, 8)}…` : "—"}
+            </Text>
             <View style={[styles.badge, statusStyle(booking.status)]}>
               <Text style={styles.badgeText}>{booking.status}</Text>
             </View>
@@ -72,19 +112,35 @@ function statusStyle(status: string) {
 }
 
 const styles = StyleSheet.create({
-  sectionLabel: { fontSize: 15, fontWeight: "700", color: colors.primaryDark, marginBottom: 10 },
-  sectionGap: { marginTop: 20 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  title: { fontSize: 22, fontWeight: "800", color: colors.text },
+  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
+  historyToggle: {
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  historyText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  sectionLabel: { fontSize: 15, fontWeight: "700", color: colors.primaryDark, marginBottom: 8 },
+  sectionGap: { marginTop: 18 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  bookingCard: { borderLeftWidth: 3, borderLeftColor: colors.accent },
   route: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 4 },
-  meta: { fontSize: 13, color: colors.textMuted, marginBottom: 8 },
-  badge: { alignSelf: "flex-start", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  meta: { fontSize: 13, color: colors.textMuted, marginBottom: 10 },
+  cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  badge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: "700", color: colors.primaryDark, textTransform: "capitalize" },
-  empty: { color: colors.textMuted, marginBottom: 8, fontSize: 13 },
 });

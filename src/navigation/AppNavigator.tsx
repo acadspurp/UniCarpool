@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../store/authStore";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { AuthScreen } from "../screens/auth/AuthScreen";
@@ -20,34 +21,74 @@ const Tabs = createBottomTabNavigator();
 
 const authScreenOptions = { headerShown: false };
 
+type TabIconProps = { focused: boolean; color: string; size: number };
+
+function tabIcon(name: keyof typeof Ionicons.glyphMap) {
+  return ({ focused, color, size }: TabIconProps) => (
+    <Ionicons name={name} size={size} color={color} style={{ opacity: focused ? 1 : 0.75 }} />
+  );
+}
+
 function MainTabs() {
   return (
     <Tabs.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontWeight: "700" },
+        headerTitleStyle: { fontWeight: "700", fontSize: 17 },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginBottom: Platform.OS === "ios" ? 0 : 4 },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          paddingBottom: 4,
-          height: 58,
+          borderTopWidth: 1,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === "web" ? 8 : 10,
+          height: Platform.OS === "web" ? 64 : 68,
         },
       }}
     >
-      <Tabs.Screen name="Home" component={HomeScreen} />
-      <Tabs.Screen name="FindRide" component={FindRideScreen} options={{ title: "Find Ride" }} />
-      <Tabs.Screen name="MyRides" component={MyRidesScreen} options={{ title: "My Rides" }} />
-      <Tabs.Screen name="Profile" component={ProfileScreen} />
+      <Tabs.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: tabIcon("home"),
+        }}
+      />
+      <Tabs.Screen
+        name="FindRide"
+        component={FindRideScreen}
+        options={{
+          title: "Find Ride",
+          tabBarLabel: "Find Ride",
+          tabBarIcon: tabIcon("search"),
+        }}
+      />
+      <Tabs.Screen
+        name="MyRides"
+        component={MyRidesScreen}
+        options={{
+          title: "My Rides",
+          tabBarLabel: "My Rides",
+          tabBarIcon: tabIcon("car"),
+        }}
+      />
+      <Tabs.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: "Profile",
+          tabBarIcon: tabIcon("person"),
+        }}
+      />
     </Tabs.Navigator>
   );
 }
 
 export function AppNavigator() {
   const { user, isAuthReady, authError, authRefreshKey, initAuthListener } = useAuthStore();
-  // authRefreshKey ensures navigation updates after email verification reload
   void authRefreshKey;
 
   useEffect(() => {
@@ -67,7 +108,7 @@ export function AppNavigator() {
   if (authError) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.errorTitle}>Firebase connection issue</Text>
+        <Text style={styles.errorTitle}>Connection issue</Text>
         <Text style={styles.loadingText}>{authError}</Text>
       </View>
     );
