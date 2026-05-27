@@ -33,52 +33,19 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupExpiredRides = exports.notifyOnNewMessage = exports.notifyOnBookingUpdate = exports.setCampusVerifiedClaim = exports.confirmCampusEmail = exports.autoVerifyCampusEmailOnSignup = void 0;
+exports.cleanupExpiredRides = exports.notifyOnNewMessage = exports.notifyOnBookingUpdate = exports.setCampusVerifiedClaim = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
-const https_1 = require("firebase-functions/v2/https");
-const functionsV1 = __importStar(require("firebase-functions/v1"));
 const firebase_functions_1 = require("firebase-functions");
 const admin = __importStar(require("firebase-admin"));
 admin.initializeApp();
 const CAMPUS_DOMAIN = "@iskolarngbayan.pup.edu.ph";
-function isCampusEmail(email) {
-    return !!email && email.toLowerCase().endsWith(CAMPUS_DOMAIN);
-}
-async function markCampusUserVerified(uid, email) {
-    await admin.auth().updateUser(uid, { emailVerified: true });
-    await admin.auth().setCustomUserClaims(uid, { campusVerified: true });
-    firebase_functions_1.logger.info(`Campus user verified: ${uid} (${email})`);
-}
-/** Auto-verify institutional emails when inbox delivery is blocked (Spark-safe v1 trigger). */
-exports.autoVerifyCampusEmailOnSignup = functionsV1.auth.user().onCreate(async (user) => {
-    if (!isCampusEmail(user.email)) {
-        firebase_functions_1.logger.info(`Skipped auto-verify for non-campus email: ${user.email}`);
-        return;
-    }
-    await markCampusUserVerified(user.uid, user.email);
-});
-/**
- * Callable backup: user taps button if verification email never arrived.
- * Only works for signed-in users with @iskolarngbayan.pup.edu.ph on their token.
- */
-exports.confirmCampusEmail = (0, https_1.onCall)(async (request) => {
-    if (!request.auth) {
-        throw new https_1.HttpsError("unauthenticated", "You must be signed in.");
-    }
-    const email = request.auth.token.email;
-    if (!isCampusEmail(email)) {
-        throw new https_1.HttpsError("failed-precondition", `Only ${CAMPUS_DOMAIN} accounts can use campus verification.`);
-    }
-    await markCampusUserVerified(request.auth.uid, email);
-    return { success: true, message: "Campus email marked verified." };
-});
 exports.setCampusVerifiedClaim = (0, firestore_1.onDocumentCreated)("users/{uid}", async (event) => {
     const uid = event.params.uid;
     const email = event.data?.data().email;
     if (!email)
         return;
-    const campusVerified = isCampusEmail(email);
+    const campusVerified = email.toLowerCase().endsWith(CAMPUS_DOMAIN);
     await admin.auth().setCustomUserClaims(uid, { campusVerified });
     firebase_functions_1.logger.info(`Custom claim set for ${uid}: ${campusVerified}`);
 });

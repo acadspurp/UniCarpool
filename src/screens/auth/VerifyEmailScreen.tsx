@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { auth } from "../../services/firebase";
-import { logout, sendCampusVerificationEmail, CAMPUS_DOMAIN } from "../../services/auth";
-import { confirmCampusEmailServerSide } from "../../services/campusVerification";
+import {
+  logout,
+  sendCampusVerificationEmail,
+  CAMPUS_DOMAIN,
+  completeEmailVerificationFromLink,
+  getEmailVerificationLinkParams,
+  clearEmailVerificationQueryParams,
+  getVerificationActionSettings,
+} from "../../services/auth";
 import { useAuthStore } from "../../store/authStore";
 import { colors } from "../../theme/colors";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
@@ -10,13 +17,36 @@ import { OutlineButton } from "../../components/ui/OutlineButton";
 
 export function VerifyEmailScreen() {
   const [loading, setLoading] = useState(false);
-  const [campusLoading, setCampusLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
   const [lastResendError, setLastResendError] = useState<string | null>(null);
   const [initialSendDone, setInitialSendDone] = useState(false);
   const sentOnMount = useRef(false);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const email = auth.currentUser?.email ?? "your campus email";
+  const continueUrl = getVerificationActionSettings().url;
+
+  useEffect(() => {
+    const handleIncomingLink = async () => {
+      const { mode, oobCode } = getEmailVerificationLinkParams();
+      if (mode !== "verifyEmail" || !oobCode) return;
+
+      try {
+        setLinkLoading(true);
+        await completeEmailVerificationFromLink(oobCode);
+        clearEmailVerificationQueryParams();
+        const user = await refreshUser();
+        if (user?.emailVerified) {
+          Alert.alert("Email verified", "Your campus email is confirmed. Welcome to UniCarpool!");
+        }
+      } catch (error: any) {
+        Alert.alert("Verification link error", error.message ?? "The link may be expired. Resend email.");
+      } finally {
+        setLinkLoading(false);
+      }
+    };
+    handleIncomingLink();
+  }, [refreshUser]);
 
   useEffect(() => {
     if (sentOnMount.current || !auth.currentUser || auth.currentUser.emailVerified) return;
@@ -41,40 +71,12 @@ export function VerifyEmailScreen() {
       }
       Alert.alert(
         "Not verified yet",
-        "If email never arrives, use “Verify campus account (server)” below — PUP inboxes often block Firebase mail.",
+        "Open the link in the verification email, then tap this button again.\n\nCheck Spam/Junk and allow mail from Firebase (noreply@firebaseapp.com).",
       );
     } catch (error: any) {
       Alert.alert("Could not check status", error.message ?? "Try again or log out and sign in.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const verifyViaServer = async () => {
-    try {
-      setCampusLoading(true);
-      await confirmCampusEmailServerSide();
-      const user = await refreshUser();
-      if (user?.emailVerified) {
-        Alert.alert("Verified", "Your campus account is verified. You can use the app now.");
-      } else {
-        Alert.alert(
-          "Almost done",
-          "Log out and sign in again so your session picks up verified status.",
-        );
-      }
-    } catch (error: any) {
-      const code = error?.code ?? "";
-      if (code === "functions/not-found" || code === "functions/unavailable") {
-        Alert.alert(
-          "Server verification not deployed",
-          "Deploy Cloud Functions first:\nfirebase deploy --only functions\n\nOr in Firebase Console → Authentication → Users → your account → mark email as verified.",
-        );
-      } else {
-        Alert.alert("Verification failed", error.message ?? "Try again.");
-      }
-    } finally {
-      setCampusLoading(false);
     }
   };
 
@@ -89,8 +91,8 @@ export function VerifyEmailScreen() {
       await sendCampusVerificationEmail(auth.currentUser);
       setInitialSendDone(true);
       Alert.alert(
-        "Request sent",
-        `Firebase accepted the send request for ${email}. Check Inbox and Spam. If nothing arrives in 5 minutes, use server verification below.`,
+        "Verification email sent",
+        `Firebase sent a new link to ${email}.\n\nAfter you click the link, you will return to:\n${continueUrl}\n\nCheck Spam/Junk if you do not see it within 5 minutes.`,
       );
     } catch (error: any) {
       const message =
@@ -110,32 +112,27 @@ export function VerifyEmailScreen() {
         <Text style={styles.emoji}>✉️</Text>
         <Text style={styles.title}>Verify your campus email</Text>
         <Text style={styles.text}>
-          {initialSendDone
-            ? "Verification email requested for:"
-            : "We will try to send a link to:"}
+          {initialSendDone ? "Verification email sent to:" : "Sending verification email to:"}
         </Text>
         <Text style={styles.email}>{email}</Text>
 
         <View style={styles.helpBox}>
-          <Text style={styles.helpTitle}>No email? This is common with school inboxes</Text>
+          <Text style={styles.helpTitle}>Firebase email checklist</Text>
           <Text style={styles.helpText}>
-            • Check Spam/Junk for sender @firebaseapp.com{"\n"}
-            • PUP mail may block Firebase — use server verification below{"\n"}
-            • Or Firebase Console → Authentication → Users → your row → verify email manually
+            1. Authentication → Sign-in method → Email/Password enabled{"\n"}
+            2. Authentication → Templates → Email address verification → enabled{"\n"}
+            3. Authentication → Settings → Authorized domains includes localhost and your deploy URL{"\n"}
+            4. After clicking the email link, you return to:{"\n"}
+            {continueUrl}
           </Text>
         </View>
 
-        {lastResendError ? (
-          <Text style={styles.errorText}>Last error: {lastResendError}</Text>
+        {lastResendError ? <Text style={styles.errorText}>Send error: {lastResendError}</Text> : null}
+
+        {linkLoading ? (
+          <Text style={styles.statusText}>Completing verification from email link...</Text>
         ) : null}
 
-        <PrimaryButton
-          label={campusLoading ? "VERIFYING..." : "VERIFY CAMPUS ACCOUNT (SERVER)"}
-          onPress={verifyViaServer}
-          loading={campusLoading}
-          variant="accent"
-        />
-        <View style={styles.gap} />
         <PrimaryButton
           label={loading ? "CHECKING..." : "I ALREADY VERIFIED"}
           onPress={refreshVerification}
@@ -146,7 +143,7 @@ export function VerifyEmailScreen() {
         <View style={styles.gap} />
         <OutlineButton label="LOGOUT" onPress={logout} />
         <Text style={styles.footerNote}>
-          Server verification only works for {CAMPUS_DOMAIN} and requires Cloud Functions deploy.
+          Only {CAMPUS_DOMAIN} addresses can register. Institutional inboxes must allow Firebase mail.
         </Text>
       </View>
     </ScrollView>
@@ -179,6 +176,7 @@ const styles = StyleSheet.create({
   helpTitle: { fontWeight: "700", color: colors.primaryDark, marginBottom: 6, fontSize: 13 },
   helpText: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
   errorText: { fontSize: 12, color: "#dc2626", marginBottom: 12 },
+  statusText: { fontSize: 13, color: colors.primary, marginBottom: 12, fontWeight: "600" },
   footerNote: { fontSize: 11, color: colors.textMuted, marginTop: 16, lineHeight: 16 },
   gap: { height: 10 },
 });
