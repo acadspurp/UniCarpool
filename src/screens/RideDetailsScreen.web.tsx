@@ -1,33 +1,12 @@
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { ScreenContainer } from "../components/ScreenContainer";
-import { SectionHeader } from "../components/ui/SectionHeader";
-import { PrimaryButton } from "../components/ui/PrimaryButton";
-import { OutlineButton } from "../components/ui/OutlineButton";
-import { useAuthStore } from "../store/authStore";
-import { requestBooking } from "../services/bookings";
-import { ensureChat } from "../services/chat";
+import { RideDetailsActions } from "../components/rides/RideDetailsActions";
+import { formatDepartureLabel } from "../utils/date";
 import { formatVehicle } from "../utils/vehicle";
 import { colors } from "../theme/colors";
 
 export function RideDetailsScreen({ route, navigation }: any) {
   const { ride } = route.params;
-  const { user } = useAuthStore();
-
-  const handleBook = async () => {
-    if (!user) return;
-    if (user.uid === ride.driverId) {
-      Alert.alert("Not allowed", "Drivers cannot book their own rides.");
-      return;
-    }
-    try {
-      const bookingRef = await requestBooking(ride.id, ride.driverId, user.uid, 1);
-      const chatId = `${ride.id}_${bookingRef.id}`;
-      await ensureChat(chatId, ride.id, bookingRef.id, [ride.driverId, user.uid]);
-      Alert.alert("Requested", "Seat request sent to driver.");
-    } catch (error: any) {
-      Alert.alert("Booking failed", error.message);
-    }
-  };
 
   return (
     <ScreenContainer>
@@ -39,7 +18,7 @@ export function RideDetailsScreen({ route, navigation }: any) {
       </View>
 
       <View style={styles.infoRow}>
-        <Info label="Departure" value={String(ride.departureTime)} />
+        <Info label="Departure" value={formatDepartureLabel(ride.departureTime)} />
         <Info label="Seats left" value={String(ride.availableSeats)} />
       </View>
 
@@ -52,32 +31,19 @@ export function RideDetailsScreen({ route, navigation }: any) {
 
       {ride.vehicle ? (
         <View style={styles.vehicleCard}>
-          <Text style={styles.vehicleTitle}>Vehicle (for your safety)</Text>
+          <Text style={styles.vehicleTitle}>Vehicle</Text>
           <Text style={styles.vehicleText}>{formatVehicle(ride.vehicle)}</Text>
-          <Text style={styles.vehicleHint}>
-            Shared by the driver so you can identify the car at pickup.
-          </Text>
         </View>
       ) : null}
 
       {ride.notes ? (
         <View style={styles.notesCard}>
-          <Text style={styles.notesTitle}>Driver notes</Text>
+          <Text style={styles.notesTitle}>Notes</Text>
           <Text style={styles.notesText}>{ride.notes}</Text>
         </View>
       ) : null}
 
-      <SectionHeader
-        title="Ready to ride?"
-        subtitle="Request a seat and chat with the driver to confirm pickup details."
-      />
-
-      <PrimaryButton label="REQUEST SEAT" onPress={handleBook} />
-      <View style={styles.gap} />
-      <OutlineButton
-        label="OPEN CHAT"
-        onPress={() => navigation.navigate("Chat", { chatId: `${ride.id}_direct` })}
-      />
+      <RideDetailsActions ride={ride} navigation={navigation} />
     </ScreenContainer>
   );
 }
@@ -118,8 +84,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   vehicleTitle: { fontSize: 14, fontWeight: "700", color: colors.primaryDark, marginBottom: 6 },
-  vehicleText: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 6 },
-  vehicleHint: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+  vehicleText: { fontSize: 15, fontWeight: "700", color: colors.text },
   infoCard: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -138,5 +103,4 @@ const styles = StyleSheet.create({
   },
   notesTitle: { fontWeight: "700", color: colors.primaryDark, marginBottom: 4 },
   notesText: { color: colors.textMuted, lineHeight: 20 },
-  gap: { height: 10 },
 });

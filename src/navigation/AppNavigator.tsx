@@ -27,6 +27,12 @@ const Tabs = createBottomTabNavigator();
 
 const authScreenOptions = { headerShown: false };
 
+const stackBrandHeaderOptions = {
+  headerShown: true,
+  header: () => <StackBrandHeader />,
+  title: "",
+};
+
 type TabIconProps = { focused: boolean; color: string; size: number };
 
 function tabIcon(name: AppIconName) {
@@ -145,17 +151,9 @@ export function AppNavigator() {
     <MobileShellProvider>
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: styles.scene }}>
         <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen
-          name="PostRide"
-          component={PostRideScreen}
-          options={{
-            headerShown: true,
-            header: () => <StackBrandHeader />,
-            title: "",
-          }}
-        />
-        <Stack.Screen name="RideDetails" component={RideDetailsScreen} options={{ title: "Ride Details" }} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="PostRide" component={PostRideScreen} options={stackBrandHeaderOptions} />
+        <Stack.Screen name="RideDetails" component={RideDetailsScreen} options={stackBrandHeaderOptions} />
+        <Stack.Screen name="Chat" component={ChatScreen} options={stackBrandHeaderOptions} />
       </Stack.Navigator>
       <NotificationsPanel />
     </MobileShellProvider>
