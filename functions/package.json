@@ -1,0 +1,22 @@
+{
+  "name": "unicarpool-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "deploy": "firebase deploy --only functions",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "lint": "eslint --ext .ts src"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3"
+  }
+}

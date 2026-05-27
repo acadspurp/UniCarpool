@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isCampusVerified() {
+      return request.auth.token.campusVerified == true
+        || request.auth.token.email.matches(".*@iskolarngbayan\\.pup\\.edu\\.ph$");
+    }
+
+    function isVerifiedCampusUser() {
+      return isSignedIn() && isEmailVerified() && isCampusVerified();
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isVerifiedCampusUser() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /rides/{rideId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedCampusUser()
+        && request.resource.data.driverId == request.auth.uid;
+      allow update: if isVerifiedCampusUser()
+        && resource.data.driverId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn()
+        && (resource.data.driverId == request.auth.uid || resource.data.riderId == request.auth.uid);
+      allow create: if isVerifiedCampusUser()
+        && request.resource.data.riderId == request.auth.uid
+        && request.resource.data.riderId != request.resource.data.driverId;
+      allow update: if isVerifiedCampusUser()
+        && (
+          resource.data.driverId == request.auth.uid ||
+          resource.data.riderId == request.auth.uid
+        );
+      allow delete: if false;
+    }
+
+    match /chats/{chatId} {
+      allow read: if isVerifiedCampusUser() && request.auth.uid in resource.data.members;
+      allow create, update: if isVerifiedCampusUser() && request.auth.uid in request.resource.data.members;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isVerifiedCampusUser() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow create: if isVerifiedCampusUser()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+  }
+}

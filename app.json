@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "UniCarpool",
+    "slug": "UniCarpool",
+    "version": "1.0.0",
+    "userInterfaceStyle": "light",
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
