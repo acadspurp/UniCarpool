@@ -17,6 +17,9 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FirebaseError } from "firebase/app";
 import { CAMPUS_DOMAIN, signIn, signUp } from "../../services/auth";
+import { createOrUpdateProfile } from "../../services/profile";
+import { RoleSelectField } from "../../components/ui/RoleSelectField";
+import type { CampusRole } from "../../types/models";
 import { TextField } from "../../components/ui/TextField";
 import { PasswordField } from "../../components/ui/PasswordField";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
@@ -35,6 +38,9 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   fullName: z.string().trim().min(2, "Enter your full name."),
+  campusRole: z.enum(["student", "faculty", "staff"], {
+    message: "Select whether you are a student, professor, or staff.",
+  }),
   email: z
     .string()
     .trim()
@@ -103,7 +109,7 @@ export function AuthScreen({ navigation, route }: any) {
 
   const signupForm = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { fullName: "", email: "", password: "" },
+    defaultValues: { fullName: "", campusRole: "student" as CampusRole, email: "", password: "" },
   });
 
   useEffect(() => {
@@ -139,7 +145,16 @@ export function AuthScreen({ navigation, route }: any) {
     setPrivacyError(null);
     try {
       setSignupLoading(true);
-      await signUp(values.email, values.password, values.fullName);
+      const newUser = await signUp(values.email, values.password, values.fullName);
+      await createOrUpdateProfile({
+        uid: newUser.uid,
+        email: newUser.email ?? values.email.trim().toLowerCase(),
+        fullName: values.fullName.trim(),
+        campusRole: values.campusRole,
+        department: "",
+        phone: "",
+        isVerifiedCampus: false,
+      });
       Alert.alert(
         "Account created",
         "We will send a 6-digit code to your campus email on the next screen.",
@@ -203,6 +218,18 @@ export function AuthScreen({ navigation, route }: any) {
             value={value}
             onChangeText={onChange}
             error={firstError(signupForm.formState.errors, "fullName")}
+          />
+        )}
+      />
+      <Controller
+        control={signupForm.control}
+        name="campusRole"
+        render={({ field: { onChange, value } }) => (
+          <RoleSelectField
+            label="I am a"
+            value={value}
+            onChange={onChange}
+            error={firstError(signupForm.formState.errors, "campusRole")}
           />
         )}
       />

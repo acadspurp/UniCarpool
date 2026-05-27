@@ -1,4 +1,4 @@
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { Profile } from "../types/models";
 
@@ -13,4 +13,15 @@ export async function createOrUpdateProfile(userData: Partial<Profile> & { uid: 
     },
     { merge: true },
   );
+}
+
+export function subscribeProfile(uid: string, cb: (profile: Profile | null) => void) {
+  const profileRef = doc(db, "users", uid);
+  return onSnapshot(profileRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      cb(null);
+      return;
+    }
+    cb({ uid, ...(snapshot.data() as Profile) });
+  });
 }

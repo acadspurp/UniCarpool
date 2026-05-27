@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppIcon } from "../components/ui/AppIcon";
 import { Controller, useForm } from "react-hook-form";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { TextField } from "../components/ui/TextField";
+import { ReadOnlyField } from "../components/ui/ReadOnlyField";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
-import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
-import { createOrUpdateProfile } from "../services/profile";
+import { createOrUpdateProfile, subscribeProfile } from "../services/profile";
 import { logout, CAMPUS_DOMAIN } from "../services/auth";
+import { formatCampusRole } from "../constants/campusRoles";
 import { confirmAction, showMessage } from "../utils/alert";
+import type { CampusRole, Profile } from "../types/models";
 import { colors } from "../theme/colors";
 
 type ProfileValues = {
   fullName: string;
   department: string;
-  campusRole: string;
   phone: string;
   vehicleMake: string;
   vehicleModel: string;
@@ -27,11 +28,11 @@ export function ProfileScreen() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [vehicleOpen, setVehicleOpen] = useState(false);
-  const { control, handleSubmit } = useForm<ProfileValues>({
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const { control, handleSubmit, reset } = useForm<ProfileValues>({
     defaultValues: {
       fullName: user?.displayName || "",
       department: "",
-      campusRole: "student",
       phone: "",
       vehicleMake: "",
       vehicleModel: "",
@@ -39,6 +40,27 @@ export function ProfileScreen() {
       vehiclePlate: "",
     },
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeProfile(user.uid, (data) => {
+      setProfile(data);
+      if (data) {
+        reset({
+          fullName: data.fullName || user.displayName || "",
+          department: data.department || "",
+          phone: data.phone || "",
+          vehicleMake: data.vehicle?.make || "",
+          vehicleModel: data.vehicle?.model || "",
+          vehicleColor: data.vehicle?.color || "",
+          vehiclePlate: data.vehicle?.plate || "",
+        });
+      }
+    });
+    return () => unsub();
+  }, [user, reset]);
+
+  const campusRole: CampusRole = profile?.campusRole ?? "student";
 
   const onSave = async (values: ProfileValues) => {
     if (!user) return;
@@ -52,7 +74,7 @@ export function ProfileScreen() {
         email: user.email || "",
         fullName: values.fullName,
         department: values.department,
-        campusRole: values.campusRole as "student" | "faculty" | "staff",
+        campusRole,
         phone: values.phone,
         isVerifiedCampus: user.emailVerified,
         ...(hasVehicle
@@ -104,6 +126,11 @@ export function ProfileScreen() {
             <TextField label="Full name" placeholder="Full name" value={value} onChangeText={onChange} />
           )}
         />
+        <ReadOnlyField
+          label="Campus role"
+          value={formatCampusRole(campusRole)}
+          hint="Set when you signed up and cannot be changed here."
+        />
         <Controller
           control={control}
           name="department"
@@ -113,19 +140,6 @@ export function ProfileScreen() {
               placeholder="e.g. BS Information Technology"
               value={value}
               onChangeText={onChange}
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="campusRole"
-          render={({ field: { onChange, value } }) => (
-            <TextField
-              label="Campus role"
-              placeholder="student | faculty | staff"
-              value={value}
-              onChangeText={onChange}
-              autoCapitalize="none"
             />
           )}
         />
