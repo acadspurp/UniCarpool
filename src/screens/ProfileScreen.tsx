@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AppIcon } from "../components/ui/AppIcon";
 import { Controller, useForm } from "react-hook-form";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { TextField } from "../components/ui/TextField";
@@ -141,7 +141,7 @@ export function ProfileScreen() {
 
         <Pressable style={styles.vehicleToggle} onPress={() => setVehicleOpen((v) => !v)}>
           <Text style={styles.vehicleToggleText}>Vehicle details (drivers)</Text>
-          <Ionicons
+          <AppIcon
             name={vehicleOpen ? "chevron-up" : "chevron-down"}
             size={20}
             color={colors.primary}

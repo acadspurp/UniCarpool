@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
+import { AppIcon, type AppIconName } from "../components/ui/AppIcon";
 import { useAuthStore } from "../store/authStore";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { AuthScreen } from "../screens/auth/AuthScreen";
@@ -23,9 +23,9 @@ const authScreenOptions = { headerShown: false };
 
 type TabIconProps = { focused: boolean; color: string; size: number };
 
-function tabIcon(name: keyof typeof Ionicons.glyphMap) {
+function tabIcon(name: AppIconName) {
   return ({ focused, color, size }: TabIconProps) => (
-    <Ionicons name={name} size={size} color={color} style={{ opacity: focused ? 1 : 0.75 }} />
+    <AppIcon name={name} size={size} color={color} style={{ opacity: focused ? 1 : 0.75 }} />
   );
 }
 

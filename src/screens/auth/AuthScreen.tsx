@@ -3,6 +3,7 @@ import {
   Alert,
   Animated,
   Easing,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +21,7 @@ import { TextField } from "../../components/ui/TextField";
 import { PasswordField } from "../../components/ui/PasswordField";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import { OutlineButton } from "../../components/ui/OutlineButton";
+import { PrivacyConsent } from "../../components/ui/PrivacyConsent";
 import { colors } from "../../theme/colors";
 import { useResponsive } from "../../hooks/useResponsive";
 
@@ -86,9 +88,12 @@ export function AuthScreen({ navigation, route }: any) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
 
   const { width } = useWindowDimensions();
-  const { isWide } = useResponsive();
+  const { isWide, isCompact } = useResponsive();
+  const isMobile = !isWide;
   const slideAnim = useRef(new Animated.Value(initialMode === "signup" ? 1 : 0)).current;
 
   const loginForm = useForm<LoginValues>({
@@ -126,6 +131,12 @@ export function AuthScreen({ navigation, route }: any) {
   };
 
   const onSignup = async (values: SignupValues) => {
+    if (!privacyAccepted) {
+      setPrivacyError("Please agree to the data privacy notice to continue.");
+      Alert.alert("Consent required", "Please agree to the data privacy notice to create an account.");
+      return;
+    }
+    setPrivacyError(null);
     try {
       setSignupLoading(true);
       await signUp(values.email, values.password, values.fullName);
@@ -224,6 +235,38 @@ export function AuthScreen({ navigation, route }: any) {
     </>
   );
 
+  const loginPromo = (
+    <PromoSection
+      title="Hello, Friend!"
+      text="Register with your PUP institutional email to post rides, find carpools, and chat with your campus community."
+      switchLabel="SIGN UP"
+      onSwitch={goToSignup}
+      mobile={isMobile}
+    />
+  );
+
+  const signupPromo = (
+    <PromoSection
+      title="Welcome Back!"
+      text="Already have an account? Sign in to continue posting rides, booking seats, and messaging drivers or riders."
+      switchLabel="SIGN IN"
+      onSwitch={goToLogin}
+      mobile={isMobile}
+    />
+  );
+
+  const mobileScrollProps = {
+    style: styles.mobileScroll,
+    contentContainerStyle: [
+      styles.mobileScrollContent,
+      isCompact && styles.mobileScrollContentCompact,
+    ],
+    keyboardShouldPersistTaps: "handled" as const,
+    showsVerticalScrollIndicator: true,
+    nestedScrollEnabled: true,
+    bounces: true,
+  };
+
   const loginSlide = (
     <View style={[styles.slide, { width: panelWidth }]}>
       {isWide ? (
@@ -236,30 +279,25 @@ export function AuthScreen({ navigation, route }: any) {
               loading={loginLoading}
             />
           </FormSection>
-          <PromoSection
-            title="Hello, Friend!"
-            text="Register with your PUP institutional email to post rides, find carpools, and chat with your campus community."
-            switchLabel="SIGN UP"
-            onSwitch={goToSignup}
-          />
+          {loginPromo}
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.mobileSlide} keyboardShouldPersistTaps="handled">
-          <FormSection title="Sign In" subtitle="Welcome back to UniCarpool">
-            {loginFields}
-            <PrimaryButton
-              label="SIGN IN"
-              onPress={loginForm.handleSubmit(onLogin, alertFormErrors)}
-              loading={loginLoading}
-            />
-          </FormSection>
-          <PromoSection
-            title="Hello, Friend!"
-            text="Register with your PUP institutional email to post rides, find carpools, and chat with your campus community."
-            switchLabel="SIGN UP"
-            onSwitch={goToSignup}
-          />
-        </ScrollView>
+        <KeyboardAvoidingView
+          style={styles.mobileKeyboard}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView {...mobileScrollProps}>
+            {loginPromo}
+            <FormSection title="Sign In" subtitle="Welcome back to UniCarpool" mobile>
+              {loginFields}
+              <PrimaryButton
+                label="SIGN IN"
+                onPress={loginForm.handleSubmit(onLogin, alertFormErrors)}
+                loading={loginLoading}
+              />
+            </FormSection>
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </View>
   );
@@ -268,14 +306,17 @@ export function AuthScreen({ navigation, route }: any) {
     <View style={[styles.slide, { width: panelWidth }]}>
       {isWide ? (
         <View style={styles.wideRow}>
-          <PromoSection
-            title="Welcome Back!"
-            text="Already have an account? Sign in to continue posting rides, booking seats, and messaging drivers or riders."
-            switchLabel="SIGN IN"
-            onSwitch={goToLogin}
-          />
+          {signupPromo}
           <FormSection title="Create Account" subtitle="Join the PUP carpool community">
             {signupFields}
+            <PrivacyConsent
+              checked={privacyAccepted}
+              onToggle={() => {
+                setPrivacyAccepted((v) => !v);
+                setPrivacyError(null);
+              }}
+              error={privacyError ?? undefined}
+            />
             <PrimaryButton
               label="SIGN UP"
               onPress={signupForm.handleSubmit(onSignup, alertFormErrors)}
@@ -284,22 +325,30 @@ export function AuthScreen({ navigation, route }: any) {
           </FormSection>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.mobileSlide} keyboardShouldPersistTaps="handled">
-          <PromoSection
-            title="Welcome Back!"
-            text="Already have an account? Sign in to continue posting rides, booking seats, and messaging drivers or riders."
-            switchLabel="SIGN IN"
-            onSwitch={goToLogin}
-          />
-          <FormSection title="Create Account" subtitle="Join the PUP carpool community">
-            {signupFields}
-            <PrimaryButton
-              label="SIGN UP"
-              onPress={signupForm.handleSubmit(onSignup, alertFormErrors)}
-              loading={signupLoading}
-            />
-          </FormSection>
-        </ScrollView>
+        <KeyboardAvoidingView
+          style={styles.mobileKeyboard}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView {...mobileScrollProps}>
+            {signupPromo}
+            <FormSection title="Create Account" subtitle="Join the PUP carpool community" mobile>
+              {signupFields}
+              <PrivacyConsent
+                checked={privacyAccepted}
+                onToggle={() => {
+                  setPrivacyAccepted((v) => !v);
+                  setPrivacyError(null);
+                }}
+                error={privacyError ?? undefined}
+              />
+              <PrimaryButton
+                label="SIGN UP"
+                onPress={signupForm.handleSubmit(onSignup, alertFormErrors)}
+                loading={signupLoading}
+              />
+            </FormSection>
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </View>
   );
@@ -332,14 +381,16 @@ function FormSection({
   title,
   subtitle,
   children,
+  mobile = false,
 }: {
   title: string;
   subtitle: string;
   children: ReactNode;
+  mobile?: boolean;
 }) {
   return (
-    <View style={styles.formPanel}>
-      <Text style={styles.formTitle}>{title}</Text>
+    <View style={[styles.formPanel, mobile && styles.formPanelMobile]}>
+      <Text style={[styles.formTitle, mobile && styles.formTitleMobile]}>{title}</Text>
       <Text style={styles.formSubtitle}>{subtitle}</Text>
       <Text style={styles.hint}>Use your @iskolarngbayan.pup.edu.ph email</Text>
       {children}
@@ -352,18 +403,20 @@ function PromoSection({
   text,
   switchLabel,
   onSwitch,
+  mobile = false,
 }: {
   title: string;
   text: string;
   switchLabel: string;
   onSwitch: () => void;
+  mobile?: boolean;
 }) {
   return (
-    <View style={styles.promoPanel}>
+    <View style={[styles.promoPanel, mobile && styles.promoPanelMobile]}>
       <View style={styles.promoCurve} />
-      <View style={styles.promoContent}>
-        <Text style={styles.promoTitle}>{title}</Text>
-        <Text style={styles.promoText}>{text}</Text>
+      <View style={[styles.promoContent, mobile && styles.promoContentMobile]}>
+        <Text style={[styles.promoTitle, mobile && styles.promoTitleMobile]}>{title}</Text>
+        <Text style={[styles.promoText, mobile && styles.promoTextMobile]}>{text}</Text>
         <OutlineButton label={switchLabel} onPress={onSwitch} light />
       </View>
     </View>
@@ -376,28 +429,41 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: "center",
     minHeight: "100%" as unknown as number,
+    ...(Platform.OS === "web"
+      ? { height: "100vh" as unknown as number, maxHeight: "100vh" as unknown as number }
+      : {}),
   },
   backToWelcome: {
     alignSelf: "flex-start",
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "web" ? 12 : 16,
     paddingBottom: 4,
     width: "100%",
     maxWidth: 1100,
+    zIndex: 2,
   },
   backToWelcomeText: { color: colors.textMuted, fontSize: 13 },
   sliderViewport: {
     flex: 1,
+    minHeight: 0,
     overflow: "hidden",
     maxWidth: 1100,
+    width: "100%",
   },
   sliderTrack: {
     flex: 1,
     flexDirection: "row",
   },
-  slide: { flex: 1 },
+  slide: { flex: 1, height: "100%" as unknown as number },
   wideRow: { flex: 1, flexDirection: "row" },
-  mobileSlide: { flexGrow: 1 },
+  mobileKeyboard: { flex: 1, minHeight: 0 },
+  mobileScroll: {
+    flex: 1,
+    minHeight: 0,
+    ...(Platform.OS === "web" ? { overflow: "scroll" as "scroll" } : {}),
+  },
+  mobileScrollContent: { paddingBottom: 32, flexGrow: 1 },
+  mobileScrollContentCompact: { paddingBottom: 40 },
   formPanel: {
     flex: 1,
     paddingHorizontal: 28,
@@ -406,7 +472,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     minWidth: 280,
   },
+  formPanelMobile: {
+    flex: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    justifyContent: "flex-start",
+    minWidth: 0,
+  },
   formTitle: { fontSize: 28, fontWeight: "800", color: colors.text, marginBottom: 8 },
+  formTitleMobile: { fontSize: 22, marginBottom: 6 },
   formSubtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 4 },
   hint: { fontSize: 12, color: colors.primary, marginBottom: 20, fontWeight: "600" },
   promoPanel: {
@@ -416,6 +490,16 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
   },
+  promoPanelMobile: {
+    flex: 0,
+    minHeight: 0,
+    marginBottom: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  promoContentMobile: { paddingHorizontal: 16, paddingVertical: 18 },
+  promoTitleMobile: { fontSize: 20, marginBottom: 6 },
+  promoTextMobile: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
   promoCurve: {
     position: "absolute",
     width: 220,

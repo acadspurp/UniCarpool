@@ -1,5 +1,5 @@
 import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AppIcon } from "./AppIcon";
 import { colors } from "../../theme/colors";
 
 type Props = TextInputProps;
@@ -7,7 +7,7 @@ type Props = TextInputProps;
 export function SearchField(props: Props) {
   return (
     <View style={styles.wrap}>
-      <Ionicons name="search" size={20} color={colors.textMuted} style={styles.icon} />
+      <AppIcon name="search" size={20} color={colors.textMuted} style={styles.icon} />
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={styles.input}

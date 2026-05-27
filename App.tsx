@@ -17,7 +17,9 @@ export default function App() {
     ...Ionicons.font,
   });
 
-  if (!fontsLoaded && !fontError) {
+  const iconsReady = Platform.OS === "web" || fontsLoaded || fontError;
+
+  if (!iconsReady) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color={colors.primary} />

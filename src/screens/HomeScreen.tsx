@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { AppIcon } from "../components/ui/AppIcon";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
 import { useAuthStore } from "../store/authStore";
@@ -17,7 +17,7 @@ export function HomeScreen({ navigation }: any) {
           <Text style={styles.brandSub}>Campus rides</Text>
         </View>
         <Pressable style={styles.iconBtn} accessibilityLabel="Notifications">
-          <Ionicons name="notifications-outline" size={22} color={colors.primary} />
+          <AppIcon name="notifications-outline" size={22} color={colors.primary} />
         </Pressable>
       </View>
 
@@ -29,7 +29,7 @@ export function HomeScreen({ navigation }: any) {
       <View style={styles.modeCard}>
         <View style={styles.modeHeader}>
           <View style={[styles.modeIconWrap, styles.driverIcon]}>
-            <Ionicons name="car-sport" size={26} color={colors.primary} />
+            <AppIcon name="car-sport" size={26} color={colors.primary} />
           </View>
           <View style={styles.modeTextWrap}>
             <Text style={styles.modeTitle}>Driver</Text>
@@ -42,7 +42,7 @@ export function HomeScreen({ navigation }: any) {
       <View style={styles.modeCard}>
         <View style={styles.modeHeader}>
           <View style={[styles.modeIconWrap, styles.riderIcon]}>
-            <Ionicons name="people" size={26} color={colors.accent} />
+            <AppIcon name="people" size={26} color={colors.accent} />
           </View>
           <View style={styles.modeTextWrap}>
             <Text style={styles.modeTitle}>Rider</Text>
