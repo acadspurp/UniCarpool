@@ -162,6 +162,26 @@ export function PostRideScreen({ navigation }: any) {
     } catch (error: unknown) {
       const code = typeof error === "object" && error && "code" in error ? (error as any).code : null;
       const isPermissionDenied = code === "permission-denied";
+
+      if (isPermissionDenied) {
+        try {
+          const token = await user.getIdTokenResult(true);
+          const emailVerifiedClaim = (token.claims as any)?.email_verified;
+          const campusVerifiedClaim = (token.claims as any)?.campusVerified;
+          showMessage(
+            "Could not post ride (permissions)",
+            `Auth: email=${user.email ?? "—"} | user.emailVerified=${String(
+              user.emailVerified,
+            )} | token.email_verified=${String(emailVerifiedClaim)} | token.campusVerified=${String(
+              campusVerifiedClaim,
+            )}`,
+          );
+          return;
+        } catch {
+          // Fall through to generic permission message below.
+        }
+      }
+
       showMessage(
         isPermissionDenied ? "Could not post ride (permissions)" : "Could not post ride",
         isPermissionDenied
