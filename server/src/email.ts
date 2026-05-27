@@ -63,6 +63,11 @@ async function sendWithBrevoApi(apiKey: string, to: string, code: string) {
   if (!response.ok) {
     const body = await response.text();
     console.error("Brevo API error", body);
+    if (body.includes("unauthorized") || body.includes("Key not found")) {
+      throw new Error(
+        "Invalid Brevo API key. In Brevo use SMTP & API → API Keys (v3), not the SMTP key. Update BREVO_API_KEY on Render.",
+      );
+    }
     throw new Error("Brevo API failed to send the verification email.");
   }
 }
