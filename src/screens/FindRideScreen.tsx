@@ -38,7 +38,9 @@ export function FindRideScreen({ navigation }: any) {
           <RideListCard
             key={item.id}
             ride={item}
-            onPress={() => navigation.navigate("RideDetails", { ride: item })}
+            onPress={() =>
+              navigation.navigate("RideDetails", { rideId: item.id, ride: item })
+            }
           />
         ))
       )}

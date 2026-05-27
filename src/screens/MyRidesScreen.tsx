@@ -70,7 +70,9 @@ export function MyRidesScreen({ navigation }: any) {
               </View>
               <OutlineButton
                 label="VIEW DETAILS"
-                onPress={() => navigation.navigate("RideDetails", { ride })}
+                onPress={() =>
+                  navigation.navigate("RideDetails", { rideId: ride.id, ride })
+                }
               />
             </View>
           </View>
