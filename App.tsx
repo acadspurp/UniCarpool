@@ -47,7 +47,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     ...(Platform.OS === "web"
-      ? { minHeight: "100vh" as unknown as number, height: "100vh" as unknown as number, width: "100%" as unknown as number }
+      ? {
+          minHeight: "100dvh" as unknown as number,
+          height: "100dvh" as unknown as number,
+          width: "100%" as unknown as number,
+        }
       : {}),
   },
   nav: {

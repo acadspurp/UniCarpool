@@ -153,7 +153,14 @@ export function AppNavigator() {
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="PostRide" component={PostRideScreen} options={stackBrandHeaderOptions} />
         <Stack.Screen name="RideDetails" component={RideDetailsScreen} options={stackBrandHeaderOptions} />
-        <Stack.Screen name="Chat" component={ChatScreen} options={stackBrandHeaderOptions} />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{
+            ...stackBrandHeaderOptions,
+            contentStyle: [styles.scene, styles.chatScene],
+          }}
+        />
       </Stack.Navigator>
       <NotificationsPanel />
     </MobileShellProvider>
@@ -164,6 +171,9 @@ const styles = StyleSheet.create({
   scene: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  chatScene: {
+    overflow: "hidden",
   },
   loading: {
     flex: 1,
