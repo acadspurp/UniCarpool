@@ -1,14 +1,70 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "./firebase";
+import { auth } from "./firebase";
+
+const apiBase = process.env.EXPO_PUBLIC_OTP_API_URL?.replace(/\/$/, "");
+
+export class OtpApiError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "OtpApiError";
+    this.code = code;
+  }
+}
+
+async function getIdToken() {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new OtpApiError("You must be signed in.", "unauthenticated");
+  }
+  return user.getIdToken();
+}
+
+async function otpRequest<T>(path: string, body?: { code: string }): Promise<T> {
+  if (!apiBase) {
+    throw new OtpApiError(
+      "Verification API URL is not set. Add EXPO_PUBLIC_OTP_API_URL to .env (your Render service URL).",
+      "failed-precondition",
+    );
+  }
+
+  const token = await getIdToken();
+  const response = await fetch(`${apiBase}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  let data: { error?: string; code?: string; message?: string } = {};
+  try {
+    data = await response.json();
+  } catch {
+    // ignore non-JSON body
+  }
+
+  if (!response.ok) {
+    throw new OtpApiError(
+      data.error ?? data.message ?? "Request failed.",
+      data.code,
+    );
+  }
+
+  return data as T;
+}
 
 export async function sendEmailOtp() {
-  const callable = httpsCallable(functions, "sendEmailOtp");
-  const result = await callable();
-  return result.data as { success: boolean; message: string; expiresInMinutes: number };
+  return otpRequest<{ success: boolean; message: string; expiresInMinutes: number }>(
+    "/api/otp/send",
+  );
 }
 
 export async function verifyEmailOtp(code: string) {
-  const callable = httpsCallable(functions, "verifyEmailOtp");
-  const result = await callable({ code });
-  return result.data as { success: boolean; message: string };
+  const result = await otpRequest<{ success: boolean; message: string }>("/api/otp/verify", {
+    code,
+  });
+  await auth.currentUser?.getIdToken(true);
+  return result;
 }

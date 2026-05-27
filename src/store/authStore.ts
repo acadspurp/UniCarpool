@@ -27,6 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, authRefreshKey: Date.now() });
       return null;
     }
+    await current.getIdToken(true);
     await current.reload();
     const updated = auth.currentUser;
     set({ user: updated, authRefreshKey: Date.now() });

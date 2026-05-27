@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendOtpEmail = sendOtpEmail;
 const firebase_functions_1 = require("firebase-functions");
-async function sendOtpEmail({ to, code }) {
+async function sendOtpEmail({ to, code, from }) {
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
-        await sendWithResend(resendKey, to, code);
+        await sendWithResend(resendKey, to, code, from);
         return;
     }
     const smtpUser = process.env.OTP_SMTP_USER;
@@ -16,8 +16,8 @@ async function sendOtpEmail({ to, code }) {
     }
     throw new Error("Email is not configured. Set RESEND_API_KEY or OTP_SMTP_USER + OTP_SMTP_PASS in Functions secrets.");
 }
-async function sendWithResend(apiKey, to, code) {
-    const from = process.env.RESEND_FROM ?? "UniCarpool <onboarding@resend.dev>";
+async function sendWithResend(apiKey, to, code, fromAddress) {
+    const from = fromAddress ?? process.env.RESEND_FROM ?? "UniCarpool <onboarding@resend.dev>";
     const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {

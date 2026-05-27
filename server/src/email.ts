@@ -1,15 +1,12 @@
-import {logger} from "firebase-functions";
-
 type SendOtpParams = {
   to: string;
   code: string;
-  from?: string;
 };
 
-export async function sendOtpEmail({to, code, from}: SendOtpParams) {
+export async function sendOtpEmail({ to, code }: SendOtpParams) {
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
-    await sendWithResend(resendKey, to, code, from);
+    await sendWithResend(resendKey, to, code);
     return;
   }
 
@@ -21,12 +18,12 @@ export async function sendOtpEmail({to, code, from}: SendOtpParams) {
   }
 
   throw new Error(
-    "Email is not configured. Set RESEND_API_KEY or OTP_SMTP_USER + OTP_SMTP_PASS in Functions secrets.",
+    "Email is not configured. Set RESEND_API_KEY or OTP_SMTP_USER + OTP_SMTP_PASS on the server.",
   );
 }
 
-async function sendWithResend(apiKey: string, to: string, code: string, fromAddress?: string) {
-  const from = fromAddress ?? process.env.RESEND_FROM ?? "UniCarpool <onboarding@resend.dev>";
+async function sendWithResend(apiKey: string, to: string, code: string) {
+  const from = process.env.RESEND_FROM ?? "UniCarpool <onboarding@resend.dev>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -50,7 +47,7 @@ async function sendWithResend(apiKey: string, to: string, code: string, fromAddr
 
   if (!response.ok) {
     const body = await response.text();
-    logger.error("Resend API error", body);
+    console.error("Resend API error", body);
     throw new Error("Could not send verification email.");
   }
 }
@@ -66,7 +63,7 @@ async function sendWithSmtp(user: string, pass: string, to: string, code: string
     host,
     port,
     secure,
-    auth: {user, pass},
+    auth: { user, pass },
   });
 
   await transporter.sendMail({

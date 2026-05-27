@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from "react-nati
 import { auth } from "../../services/firebase";
 import { logout, CAMPUS_DOMAIN } from "../../services/auth";
 import { sendEmailOtp, verifyEmailOtp } from "../../services/otp";
+import { getOtpErrorMessage, isOtpRateLimited } from "../../utils/otpError";
 import { useAuthStore } from "../../store/authStore";
 import { colors } from "../../theme/colors";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
@@ -40,9 +41,9 @@ export function OtpVerifyScreen() {
       setStatusMessage(null);
       await sendEmailOtp();
       setStatusMessage("A 6-digit code was sent to your email. Check inbox and spam.");
-    } catch (error: any) {
-      const message = error?.message ?? "Could not send code.";
-      if (error?.code === "functions/resource-exhausted") {
+    } catch (error: unknown) {
+      const message = getOtpErrorMessage(error);
+      if (isOtpRateLimited(error)) {
         setResendCooldown(RESEND_COOLDOWN_SEC);
       }
       setStatusMessage(message);
@@ -61,8 +62,8 @@ export function OtpVerifyScreen() {
       await verifyEmailOtp(code);
       await refreshUser();
       Alert.alert("Verified", "Your campus email is verified. Welcome to UniCarpool!");
-    } catch (error: any) {
-      Alert.alert("Verification failed", error?.message ?? "Check the code and try again.");
+    } catch (error: unknown) {
+      Alert.alert("Verification failed", getOtpErrorMessage(error));
     } finally {
       setVerifyLoading(false);
     }

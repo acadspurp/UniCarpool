@@ -1,0 +1,25 @@
+{
+  "name": "unicarpool-otp-api",
+  "private": true,
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.5.0",
+    "nodemailer": "^7.0.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/nodemailer": "^6.4.17",
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3"
+  }
+}

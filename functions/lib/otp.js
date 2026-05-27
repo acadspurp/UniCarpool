@@ -35,9 +35,14 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyEmailOtp = exports.sendEmailOtp = void 0;
 const https_1 = require("firebase-functions/v2/https");
+const params_1 = require("firebase-functions/params");
 const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
 const email_1 = require("./email");
+const resendApiKey = (0, params_1.defineSecret)("RESEND_API_KEY");
+const resendFrom = (0, params_1.defineString)("RESEND_FROM", {
+    default: "UniCarpool <onboarding@resend.dev>",
+});
 const CAMPUS_DOMAIN = "@iskolarngbayan.pup.edu.ph";
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -56,7 +61,7 @@ async function markUserVerified(uid, email) {
     await admin.auth().setCustomUserClaims(uid, { campusVerified: true });
     await admin.firestore().collection("emailOtps").doc(uid).delete();
 }
-exports.sendEmailOtp = (0, https_1.onCall)(async (request) => {
+exports.sendEmailOtp = (0, https_1.onCall)({ secrets: [resendApiKey] }, async (request) => {
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "You must be signed in.");
     }
@@ -85,11 +90,11 @@ exports.sendEmailOtp = (0, https_1.onCall)(async (request) => {
         email,
     });
     try {
-        await (0, email_1.sendOtpEmail)({ to: email, code });
+        await (0, email_1.sendOtpEmail)({ to: email, code, from: resendFrom.value() });
     }
     catch (error) {
         await otpRef.delete();
-        throw new https_1.HttpsError("internal", error.message);
+        throw new https_1.HttpsError("failed-precondition", error.message || "Could not send verification email.");
     }
     return { success: true, message: "Verification code sent.", expiresInMinutes: 10 };
 });

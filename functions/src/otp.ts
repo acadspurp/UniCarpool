@@ -1,7 +1,13 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {defineSecret, defineString} from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import {sendOtpEmail} from "./email";
+
+const resendApiKey = defineSecret("RESEND_API_KEY");
+const resendFrom = defineString("RESEND_FROM", {
+  default: "UniCarpool <onboarding@resend.dev>",
+});
 
 const CAMPUS_DOMAIN = "@iskolarngbayan.pup.edu.ph";
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -26,7 +32,9 @@ async function markUserVerified(uid: string, email: string) {
   await admin.firestore().collection("emailOtps").doc(uid).delete();
 }
 
-export const sendEmailOtp = onCall(async (request) => {
+export const sendEmailOtp = onCall(
+  {secrets: [resendApiKey]},
+  async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "You must be signed in.");
   }
@@ -61,14 +69,18 @@ export const sendEmailOtp = onCall(async (request) => {
   });
 
   try {
-    await sendOtpEmail({to: email!, code});
+    await sendOtpEmail({to: email!, code, from: resendFrom.value()});
   } catch (error) {
     await otpRef.delete();
-    throw new HttpsError("internal", (error as Error).message);
+    throw new HttpsError(
+      "failed-precondition",
+      (error as Error).message || "Could not send verification email.",
+    );
   }
 
   return {success: true, message: "Verification code sent.", expiresInMinutes: 10};
-});
+  },
+);
 
 export const verifyEmailOtp = onCall(async (request) => {
   if (!request.auth) {
