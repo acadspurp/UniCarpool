@@ -46,7 +46,9 @@ function MainTabs() {
 }
 
 export function AppNavigator() {
-  const { user, isAuthReady, authError, initAuthListener } = useAuthStore();
+  const { user, isAuthReady, authError, authRefreshKey, initAuthListener } = useAuthStore();
+  // authRefreshKey ensures navigation updates after email verification reload
+  void authRefreshKey;
 
   useEffect(() => {
     const unsub = initAuthListener();
