@@ -1,6 +1,8 @@
 import { auth } from "./firebase";
 
 const apiBase = process.env.EXPO_PUBLIC_OTP_API_URL?.replace(/\/$/, "");
+// Render free tier can sleep; the first request after wake may take a while.
+const REQUEST_TIMEOUT_MS = 120000;
 
 export class OtpApiError extends Error {
   code?: string;
@@ -29,14 +31,36 @@ async function otpRequest<T>(path: string, body?: { code: string }): Promise<T> 
   }
 
   const token = await getIdToken();
-  const response = await fetch(`${apiBase}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new OtpApiError(
+        "The verification server took too long to respond (Render may be waking up on free tier). Tap Resend and wait 1-2 minutes.",
+        "deadline-exceeded",
+      );
+    }
+    if (error instanceof Error) {
+      throw new OtpApiError(
+        `Could not reach verification server. ${error.message}`,
+        "unavailable",
+      );
+    }
+    throw new OtpApiError("Could not reach verification server.", "unavailable");
+  } finally {
+    clearTimeout(timeout);
+  }
 
   let data: { error?: string; code?: string; message?: string } = {};
   try {

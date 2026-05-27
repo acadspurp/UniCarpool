@@ -12,16 +12,18 @@ export const isCampusEmail = (email: string) =>
   email.toLowerCase().endsWith(CAMPUS_DOMAIN);
 
 export async function signUp(email: string, password: string, fullName: string) {
-  if (!isCampusEmail(email)) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedName = fullName.trim();
+  if (!isCampusEmail(normalizedEmail)) {
     throw new Error(`Use your institutional email (${CAMPUS_DOMAIN})`);
   }
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  await updateProfile(userCredential.user, { displayName: fullName });
+  const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+  await updateProfile(userCredential.user, { displayName: normalizedName });
   return userCredential.user;
 }
 
 export async function signIn(email: string, password: string) {
-  return signInWithEmailAndPassword(auth, email, password);
+  return signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
 }
 
 export async function logout() {

@@ -3,17 +3,19 @@ import { colors } from "../../theme/colors";
 
 type Props = TextInputProps & {
   label?: string;
+  error?: string;
 };
 
-export function TextField({ label, style, ...props }: Props) {
+export function TextField({ label, error, style, ...props }: Props) {
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         placeholderTextColor={colors.textMuted}
-        style={[styles.input, style]}
+        style={[styles.input, error && styles.inputError, style]}
         {...props}
       />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
@@ -31,4 +33,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  inputError: { borderColor: colors.danger },
+  error: { marginTop: 6, fontSize: 12, color: colors.danger },
 });

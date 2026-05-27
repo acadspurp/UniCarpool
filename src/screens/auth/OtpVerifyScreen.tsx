@@ -158,6 +158,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: 14,
     marginBottom: 14,
+    textAlign: "center",
+    width: "100%",
   },
   statusText: { fontSize: 13, color: colors.primary, marginBottom: 12, lineHeight: 19 },
   gap: { height: 10 },

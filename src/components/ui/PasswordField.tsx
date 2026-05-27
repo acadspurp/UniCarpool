@@ -12,9 +12,10 @@ import { colors } from "../../theme/colors";
 
 type Props = Omit<TextInputProps, "secureTextEntry"> & {
   label?: string;
+  error?: string;
 };
 
-export function PasswordField({ label, style, ...props }: Props) {
+export function PasswordField({ label, error, style, ...props }: Props) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -25,7 +26,7 @@ export function PasswordField({ label, style, ...props }: Props) {
           {...props}
           secureTextEntry={!visible}
           placeholderTextColor={colors.textMuted}
-          style={[styles.input, style]}
+          style={[styles.input, error && styles.inputError, style]}
         />
         <Pressable
           onPress={() => setVisible((v) => !v)}
@@ -41,6 +42,7 @@ export function PasswordField({ label, style, ...props }: Props) {
           />
         </Pressable>
       </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
@@ -63,6 +65,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  inputError: { borderColor: colors.danger },
+  error: { marginTop: 6, fontSize: 12, color: colors.danger },
   eyeButton: {
     position: "absolute",
     right: 12,

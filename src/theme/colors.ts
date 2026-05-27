@@ -15,4 +15,5 @@ export const colors = {
   gradientStart: "#8B7CF6",
   gradientEnd: "#6C5CE7",
   success: "#2ECC71",
+  danger: "#E74C3C",
 };

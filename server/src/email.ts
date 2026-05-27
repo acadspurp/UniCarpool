@@ -55,8 +55,8 @@ async function sendWithResend(apiKey: string, to: string, code: string) {
 async function sendWithSmtp(user: string, pass: string, to: string, code: string) {
   const nodemailer = await import("nodemailer");
   const host = process.env.OTP_SMTP_HOST ?? "smtp.gmail.com";
-  const port = Number(process.env.OTP_SMTP_PORT ?? "465");
-  const secure = process.env.OTP_SMTP_SECURE !== "false";
+  const port = Number(process.env.OTP_SMTP_PORT ?? "587");
+  const secure = process.env.OTP_SMTP_SECURE === "true";
   const from = process.env.OTP_SMTP_FROM ?? user;
 
   const transporter = nodemailer.createTransport({
@@ -64,13 +64,21 @@ async function sendWithSmtp(user: string, pass: string, to: string, code: string
     port,
     secure,
     auth: { user, pass },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
 
-  await transporter.sendMail({
-    from,
-    to,
-    subject: "Your UniCarpool verification code",
-    text: `Your UniCarpool verification code is ${code}. It expires in 10 minutes.`,
-    html: `<p>Your UniCarpool verification code is <strong>${code}</strong>.</p><p>Expires in 10 minutes.</p>`,
-  });
+  try {
+    await transporter.sendMail({
+      from,
+      to,
+      subject: "Your UniCarpool verification code",
+      text: `Your UniCarpool verification code is ${code}. It expires in 10 minutes.`,
+      html: `<p>Your UniCarpool verification code is <strong>${code}</strong>.</p><p>Expires in 10 minutes.</p>`,
+    });
+  } catch (error) {
+    console.error("SMTP sendMail failed", error);
+    throw new Error("SMTP failed to send the verification email.");
+  }
 }

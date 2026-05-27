@@ -14,6 +14,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FirebaseError } from "firebase/app";
 import { CAMPUS_DOMAIN, signIn, signUp } from "../../services/auth";
 import { TextField } from "../../components/ui/TextField";
 import { PasswordField } from "../../components/ui/PasswordField";
@@ -23,14 +24,21 @@ import { colors } from "../../theme/colors";
 import { useResponsive } from "../../hooks/useResponsive";
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 const signupSchema = z.object({
-  fullName: z.string().min(2),
-  email: z.string().email().endsWith(CAMPUS_DOMAIN),
-  password: z.string().min(6),
+  fullName: z.string().trim().min(2, "Enter your full name."),
+  email: z
+    .string()
+    .trim()
+    .email("Enter a valid campus email.")
+    .endsWith(CAMPUS_DOMAIN, `Use your institutional email (${CAMPUS_DOMAIN}).`),
+  password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -38,6 +46,40 @@ type SignupValues = z.infer<typeof signupSchema>;
 type AuthMode = "login" | "signup";
 
 const SLIDE_MS = 380;
+
+function firstError(errors: Record<string, { message?: string } | undefined>, key: string) {
+  return errors[key]?.message;
+}
+
+function alertFormErrors(errors: Record<string, { message?: string } | undefined>) {
+  const messages = Object.values(errors)
+    .map((e) => e?.message)
+    .filter(Boolean) as string[];
+  if (messages.length > 0) {
+    Alert.alert("Check your entries", messages.join("\n"));
+  }
+}
+
+function getAuthErrorMessage(error: unknown) {
+  if (error instanceof FirebaseError) {
+    switch (error.code) {
+      case "auth/email-already-in-use":
+        return "This PUP email is already registered. Try Sign In instead.";
+      case "auth/invalid-email":
+        return "Enter a valid @iskolarngbayan.pup.edu.ph email.";
+      case "auth/weak-password":
+        return "Password is too weak. Use at least 6 characters.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please wait a minute and try again.";
+      default:
+        return error.message;
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Could not continue. Please try again.";
+}
 
 export function AuthScreen({ navigation, route }: any) {
   const initialMode: AuthMode = route.params?.mode === "signup" ? "signup" : "login";
@@ -76,8 +118,8 @@ export function AuthScreen({ navigation, route }: any) {
     try {
       setLoginLoading(true);
       await signIn(values.email, values.password);
-    } catch (error: any) {
-      Alert.alert("Login failed", error.message);
+    } catch (error: unknown) {
+      Alert.alert("Login failed", getAuthErrorMessage(error));
     } finally {
       setLoginLoading(false);
     }
@@ -87,10 +129,16 @@ export function AuthScreen({ navigation, route }: any) {
     try {
       setSignupLoading(true);
       await signUp(values.email, values.password, values.fullName);
-      Alert.alert("Account created", "Check your campus email for verification.");
-      goToLogin();
-    } catch (error: any) {
-      Alert.alert("Signup failed", error.message);
+      Alert.alert(
+        "Account created",
+        "We will send a 6-digit code to your campus email on the next screen.",
+      );
+    } catch (error: unknown) {
+      const message = getAuthErrorMessage(error);
+      Alert.alert("Signup failed", message);
+      if (error instanceof FirebaseError && error.code === "auth/email-already-in-use") {
+        goToLogin();
+      }
     } finally {
       setSignupLoading(false);
     }
@@ -114,6 +162,7 @@ export function AuthScreen({ navigation, route }: any) {
             placeholder="Email"
             value={value}
             onChangeText={onChange}
+            error={firstError(loginForm.formState.errors, "email")}
           />
         )}
       />
@@ -121,7 +170,12 @@ export function AuthScreen({ navigation, route }: any) {
         control={loginForm.control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <PasswordField placeholder="Password" value={value} onChangeText={onChange} />
+          <PasswordField
+            placeholder="Password"
+            value={value}
+            onChangeText={onChange}
+            error={firstError(loginForm.formState.errors, "password")}
+          />
         )}
       />
     </>
@@ -133,7 +187,12 @@ export function AuthScreen({ navigation, route }: any) {
         control={signupForm.control}
         name="fullName"
         render={({ field: { onChange, value } }) => (
-          <TextField placeholder="Full name" value={value} onChangeText={onChange} />
+          <TextField
+            placeholder="Full name"
+            value={value}
+            onChangeText={onChange}
+            error={firstError(signupForm.formState.errors, "fullName")}
+          />
         )}
       />
       <Controller
@@ -146,6 +205,7 @@ export function AuthScreen({ navigation, route }: any) {
             placeholder={`name${CAMPUS_DOMAIN}`}
             value={value}
             onChangeText={onChange}
+            error={firstError(signupForm.formState.errors, "email")}
           />
         )}
       />
@@ -153,7 +213,12 @@ export function AuthScreen({ navigation, route }: any) {
         control={signupForm.control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <PasswordField placeholder="Password" value={value} onChangeText={onChange} />
+          <PasswordField
+            placeholder="Password"
+            value={value}
+            onChangeText={onChange}
+            error={firstError(signupForm.formState.errors, "password")}
+          />
         )}
       />
     </>
@@ -165,7 +230,11 @@ export function AuthScreen({ navigation, route }: any) {
         <View style={styles.wideRow}>
           <FormSection title="Sign In" subtitle="Welcome back to UniCarpool">
             {loginFields}
-            <PrimaryButton label="SIGN IN" onPress={loginForm.handleSubmit(onLogin)} loading={loginLoading} />
+            <PrimaryButton
+              label="SIGN IN"
+              onPress={loginForm.handleSubmit(onLogin, alertFormErrors)}
+              loading={loginLoading}
+            />
           </FormSection>
           <PromoSection
             title="Hello, Friend!"
@@ -178,7 +247,11 @@ export function AuthScreen({ navigation, route }: any) {
         <ScrollView contentContainerStyle={styles.mobileSlide} keyboardShouldPersistTaps="handled">
           <FormSection title="Sign In" subtitle="Welcome back to UniCarpool">
             {loginFields}
-            <PrimaryButton label="SIGN IN" onPress={loginForm.handleSubmit(onLogin)} loading={loginLoading} />
+            <PrimaryButton
+              label="SIGN IN"
+              onPress={loginForm.handleSubmit(onLogin, alertFormErrors)}
+              loading={loginLoading}
+            />
           </FormSection>
           <PromoSection
             title="Hello, Friend!"
@@ -203,7 +276,11 @@ export function AuthScreen({ navigation, route }: any) {
           />
           <FormSection title="Create Account" subtitle="Join the PUP carpool community">
             {signupFields}
-            <PrimaryButton label="SIGN UP" onPress={signupForm.handleSubmit(onSignup)} loading={signupLoading} />
+            <PrimaryButton
+              label="SIGN UP"
+              onPress={signupForm.handleSubmit(onSignup, alertFormErrors)}
+              loading={signupLoading}
+            />
           </FormSection>
         </View>
       ) : (
@@ -216,7 +293,11 @@ export function AuthScreen({ navigation, route }: any) {
           />
           <FormSection title="Create Account" subtitle="Join the PUP carpool community">
             {signupFields}
-            <PrimaryButton label="SIGN UP" onPress={signupForm.handleSubmit(onSignup)} loading={signupLoading} />
+            <PrimaryButton
+              label="SIGN UP"
+              onPress={signupForm.handleSubmit(onSignup, alertFormErrors)}
+              loading={signupLoading}
+            />
           </FormSection>
         </ScrollView>
       )}

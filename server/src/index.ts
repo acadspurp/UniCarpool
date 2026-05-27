@@ -43,19 +43,27 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
 }
 
 app.post("/api/otp/send", requireAuth, async (req, res) => {
+  const authed = req as AuthedRequest;
+  console.log(`[OTP] send request uid=${authed.authUser.uid} email=${authed.authUser.email ?? "unknown"}`);
   try {
-    const result = await handleSendOtp((req as AuthedRequest).authUser);
+    const result = await handleSendOtp(authed.authUser);
+    console.log(`[OTP] send success uid=${authed.authUser.uid}`);
     res.json(result);
   } catch (error) {
+    console.error(`[OTP] send failed uid=${authed.authUser.uid}`, error);
     sendError(res, error);
   }
 });
 
 app.post("/api/otp/verify", requireAuth, async (req, res) => {
+  const authed = req as AuthedRequest;
+  console.log(`[OTP] verify request uid=${authed.authUser.uid}`);
   try {
-    const result = await handleVerifyOtp((req as AuthedRequest).authUser, req.body?.code);
+    const result = await handleVerifyOtp(authed.authUser, req.body?.code);
+    console.log(`[OTP] verify success uid=${authed.authUser.uid}`);
     res.json(result);
   } catch (error) {
+    console.error(`[OTP] verify failed uid=${authed.authUser.uid}`, error);
     sendError(res, error);
   }
 });
