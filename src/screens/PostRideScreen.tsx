@@ -93,19 +93,19 @@ export function PostRideScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeProfile(user.uid, (data) => {
-      setProfile(data);
-      if (data?.vehicle) {
-        vehicleForm.reset({
-          vehicleMake: data.vehicle.make || "",
-          vehicleModel: data.vehicle.model || "",
-          vehicleColor: data.vehicle.color || "",
-          vehiclePlate: data.vehicle.plate || "",
-        });
-      }
-    });
+    const unsub = subscribeProfile(user.uid, setProfile);
     return () => unsub();
-  }, [user, vehicleForm]);
+  }, [user]);
+
+  const prefillVehicleForm = () => {
+    const v = profile?.vehicle;
+    vehicleForm.reset({
+      vehicleMake: v?.make ?? "",
+      vehicleModel: v?.model ?? "",
+      vehicleColor: v?.color ?? "",
+      vehiclePlate: v?.plate ?? "",
+    });
+  };
 
   const onContinueToVehicle = (values: PostRideValues) => {
     if (!values.origin.trim() || !values.destination.trim()) {
@@ -124,6 +124,7 @@ export function PostRideScreen({ navigation }: any) {
     });
     setVehiclePrivacyAccepted(false);
     setVehiclePrivacyError(null);
+    prefillVehicleForm();
     setStep("vehicle");
   };
 
@@ -253,7 +254,12 @@ export function PostRideScreen({ navigation }: any) {
             loading={loading}
           />
           <View style={styles.backWrap}>
-            <OutlineButton label="BACK TO TRIP DETAILS" onPress={() => setStep("trip")} />
+            <OutlineButton
+              label="BACK TO TRIP DETAILS"
+              onPress={() => {
+                setStep("trip");
+              }}
+            />
           </View>
         </View>
       </ScreenContainer>
