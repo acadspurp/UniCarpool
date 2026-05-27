@@ -105,7 +105,7 @@ export function WelcomeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, paddingBottom: 32 },
+  scroll: { flexGrow: 1, paddingBottom: 48 },
   inner: { paddingHorizontal: 16, paddingTop: 20, alignSelf: "center", width: "100%" },
   innerWide: { paddingHorizontal: 32, paddingTop: 40 },
   hero: {

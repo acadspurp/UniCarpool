@@ -492,8 +492,8 @@ const styles = StyleSheet.create({
     minHeight: 0,
     ...(Platform.OS === "web" ? { overflow: "scroll" as "scroll" } : {}),
   },
-  mobileScrollContent: { paddingBottom: 32, flexGrow: 1 },
-  mobileScrollContentCompact: { paddingBottom: 40 },
+  mobileScrollContent: { paddingBottom: 80, flexGrow: 1 },
+  mobileScrollContentCompact: { paddingBottom: 88 },
   formPanel: {
     flex: 1,
     paddingHorizontal: 28,

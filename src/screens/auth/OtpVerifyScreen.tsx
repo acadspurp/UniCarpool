@@ -124,7 +124,7 @@ export function OtpVerifyScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, justifyContent: "center", padding: 24 },
+  scroll: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 48 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 24,

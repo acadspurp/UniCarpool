@@ -32,7 +32,7 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider style={styles.root}>
         <View style={styles.root}>
-          <NavigationContainer ref={rootNavigationRef}>
+          <NavigationContainer ref={rootNavigationRef} style={styles.nav}>
             <StatusBar style="dark" />
             <AppNavigator />
           </NavigationContainer>
@@ -47,8 +47,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     ...(Platform.OS === "web"
-      ? { minHeight: "100vh" as unknown as number, width: "100%" as unknown as number }
+      ? { minHeight: "100vh" as unknown as number, height: "100vh" as unknown as number, width: "100%" as unknown as number }
       : {}),
+  },
+  nav: {
+    flex: 1,
+    ...(Platform.OS === "web" ? { height: "100%" as unknown as number } : {}),
   },
   loading: {
     flex: 1,

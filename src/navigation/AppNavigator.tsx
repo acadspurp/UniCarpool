@@ -54,6 +54,7 @@ function MainTabs() {
           headerShown: true,
           header: (props) => <MainAppHeader {...props} />,
           title: "",
+          sceneContainerStyle: styles.scene,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginBottom: Platform.OS === "ios" ? 0 : 4 },
@@ -142,7 +143,7 @@ export function AppNavigator() {
 
   return (
     <MobileShellProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: styles.scene }}>
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen
           name="PostRide"
@@ -162,6 +163,10 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
+  scene: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   loading: {
     flex: 1,
     alignItems: "center",
