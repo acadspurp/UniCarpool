@@ -1,5 +1,7 @@
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import * as functionsV1 from "firebase-functions/v1";
 import {logger} from "firebase-functions";
 import * as admin from "firebase-admin";
 
@@ -7,11 +9,49 @@ admin.initializeApp();
 
 const CAMPUS_DOMAIN = "@iskolarngbayan.pup.edu.ph";
 
+function isCampusEmail(email: string | undefined | null) {
+  return !!email && email.toLowerCase().endsWith(CAMPUS_DOMAIN);
+}
+
+async function markCampusUserVerified(uid: string, email: string) {
+  await admin.auth().updateUser(uid, {emailVerified: true});
+  await admin.auth().setCustomUserClaims(uid, {campusVerified: true});
+  logger.info(`Campus user verified: ${uid} (${email})`);
+}
+
+/** Auto-verify institutional emails when inbox delivery is blocked (Spark-safe v1 trigger). */
+export const autoVerifyCampusEmailOnSignup = functionsV1.auth.user().onCreate(async (user) => {
+  if (!isCampusEmail(user.email)) {
+    logger.info(`Skipped auto-verify for non-campus email: ${user.email}`);
+    return;
+  }
+  await markCampusUserVerified(user.uid, user.email!);
+});
+
+/**
+ * Callable backup: user taps button if verification email never arrived.
+ * Only works for signed-in users with @iskolarngbayan.pup.edu.ph on their token.
+ */
+export const confirmCampusEmail = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be signed in.");
+  }
+  const email = request.auth.token.email;
+  if (!isCampusEmail(email)) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Only ${CAMPUS_DOMAIN} accounts can use campus verification.`,
+    );
+  }
+  await markCampusUserVerified(request.auth.uid, email!);
+  return {success: true, message: "Campus email marked verified."};
+});
+
 export const setCampusVerifiedClaim = onDocumentCreated("users/{uid}", async (event) => {
   const uid = event.params.uid;
   const email = event.data?.data().email as string | undefined;
   if (!email) return;
-  const campusVerified = email.toLowerCase().endsWith(CAMPUS_DOMAIN);
+  const campusVerified = isCampusEmail(email);
   await admin.auth().setCustomUserClaims(uid, {campusVerified});
   logger.info(`Custom claim set for ${uid}: ${campusVerified}`);
 });
