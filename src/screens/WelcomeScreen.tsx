@@ -96,9 +96,6 @@ export function WelcomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerLink}>About</Text>
-          <Text style={styles.footerDot}>·</Text>
-          <Text style={styles.footerLink}>Terms of Service</Text>
           <Text style={styles.footerCopy}>© 2026 UniCarpool</Text>
         </View>
       </View>
@@ -189,9 +186,6 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: "center",
     paddingTop: 8,
-    gap: 6,
   },
-  footerLink: { fontSize: 13, color: colors.primary, fontWeight: "600" },
-  footerDot: { color: colors.textMuted },
-  footerCopy: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  footerCopy: { fontSize: 12, color: colors.textMuted },
 });

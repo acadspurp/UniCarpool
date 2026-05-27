@@ -30,7 +30,9 @@ export function MainAppHeader(_props: BottomTabHeaderProps) {
           accessibilityLabel="Go to home"
           accessibilityRole="button"
         >
-          <Text style={styles.brand}>UniCarpool</Text>
+          <Text style={styles.brand}>
+            Uni<Text style={styles.brandAccent}>Carpool</Text>
+          </Text>
           <Text style={styles.brandSub}>Campus rides</Text>
         </Pressable>
       </View>
@@ -60,7 +62,8 @@ const styles = StyleSheet.create({
   left: { flexDirection: "row", alignItems: "center", flex: 1, minWidth: 0 },
   brandWrap: { marginLeft: 8, flex: 1 },
   brandWrapFlush: { marginLeft: 0 },
-  brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
+  brand: { fontSize: 18, fontWeight: "800", color: colors.text },
+  brandAccent: { color: colors.primary },
   brandSub: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   iconBtn: {
     width: 44,
