@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Alert, Button, StyleSheet, Text, TextInput } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ScreenContainer } from "../../components/ScreenContainer";
 import { CAMPUS_DOMAIN, signUp } from "../../services/auth";
+import { AuthSplitLayout } from "../../components/auth/AuthSplitLayout";
+import { TextField } from "../../components/ui/TextField";
+import { PrimaryButton } from "../../components/ui/PrimaryButton";
+import { colors } from "../../theme/colors";
 
 const signupSchema = z.object({
   fullName: z.string().min(2),
@@ -14,7 +17,7 @@ const signupSchema = z.object({
 
 type SignupValues = z.infer<typeof signupSchema>;
 
-export function SignupScreen() {
+export function SignupScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const { control, handleSubmit } = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -26,6 +29,7 @@ export function SignupScreen() {
       setLoading(true);
       await signUp(values.email, values.password, values.fullName);
       Alert.alert("Account created", "Check your campus email for verification.");
+      navigation.navigate("Login");
     } catch (error: any) {
       Alert.alert("Signup failed", error.message);
     } finally {
@@ -34,22 +38,27 @@ export function SignupScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Create account</Text>
-      <Text style={styles.subtitle}>Only {CAMPUS_DOMAIN} emails are allowed.</Text>
+    <AuthSplitLayout
+      variant="signup"
+      title="Create Account"
+      subtitle="Join the PUP carpool community"
+      promoTitle="Welcome Back!"
+      promoText="Already have an account? Sign in to continue posting rides, booking seats, and messaging drivers or riders."
+      switchLabel="SIGN IN"
+      onSwitch={() => navigation.navigate("Login")}
+    >
       <Controller
         control={control}
         name="fullName"
         render={({ field: { onChange, value } }) => (
-          <TextInput style={styles.input} placeholder="Full name" value={value} onChangeText={onChange} />
+          <TextField placeholder="Full name" value={value} onChangeText={onChange} />
         )}
       />
       <Controller
         control={control}
         name="email"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
+          <TextField
             autoCapitalize="none"
             keyboardType="email-address"
             placeholder={`name${CAMPUS_DOMAIN}`}
@@ -62,29 +71,18 @@ export function SignupScreen() {
         control={control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            placeholder="Password"
-            value={value}
-            onChangeText={onChange}
-          />
+          <TextField secureTextEntry placeholder="Password" value={value} onChangeText={onChange} />
         )}
       />
-      <Button title={loading ? "Creating..." : "Sign up"} onPress={handleSubmit(onSubmit)} />
-    </ScreenContainer>
+      <Pressable onPress={() => navigation.navigate("Welcome")} style={styles.backLink}>
+        <Text style={styles.backText}>← Back to overview</Text>
+      </Pressable>
+      <PrimaryButton label="SIGN UP" onPress={handleSubmit(onSubmit)} loading={loading} />
+    </AuthSplitLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
-  subtitle: { marginBottom: 12, color: "#334155" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-  },
+  backLink: { marginBottom: 16 },
+  backText: { color: colors.textMuted, fontSize: 13 },
 });

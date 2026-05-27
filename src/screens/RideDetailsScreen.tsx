@@ -1,9 +1,13 @@
-import { Alert, Button, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { SectionHeader } from "../components/ui/SectionHeader";
+import { PrimaryButton } from "../components/ui/PrimaryButton";
+import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
 import { requestBooking } from "../services/bookings";
 import { ensureChat } from "../services/chat";
+import { colors } from "../theme/colors";
 
 export function RideDetailsScreen({ route, navigation }: any) {
   const { ride } = route.params;
@@ -15,22 +19,21 @@ export function RideDetailsScreen({ route, navigation }: any) {
       Alert.alert("Not allowed", "Drivers cannot book their own rides.");
       return;
     }
-    const bookingRef = await requestBooking(ride.id, ride.driverId, user.uid, 1);
-    const chatId = `${ride.id}_${bookingRef.id}`;
-    await ensureChat(chatId, ride.id, bookingRef.id, [ride.driverId, user.uid]);
-    Alert.alert("Requested", "Seat request sent to driver.");
+    try {
+      const bookingRef = await requestBooking(ride.id, ride.driverId, user.uid, 1);
+      const chatId = `${ride.id}_${bookingRef.id}`;
+      await ensureChat(chatId, ride.id, bookingRef.id, [ride.driverId, user.uid]);
+      Alert.alert("Requested", "Seat request sent to driver.");
+    } catch (error: any) {
+      Alert.alert("Booking failed", error.message);
+    }
   };
 
   return (
     <ScreenContainer>
-      <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 6 }}>
-        {ride.origin.name} {"->"} {ride.destination.name}
-      </Text>
-      <Text>Departure: {ride.departureTime}</Text>
-      <Text>Seats left: {ride.availableSeats}</Text>
-      <View style={{ height: 220, marginVertical: 14 }}>
+      <View style={styles.mapWrap}>
         <MapView
-          style={{ flex: 1 }}
+          style={StyleSheet.absoluteFill}
           initialRegion={{
             latitude: ride.origin.lat || 14.5995,
             longitude: ride.origin.lng || 120.9842,
@@ -48,8 +51,26 @@ export function RideDetailsScreen({ route, navigation }: any) {
           />
         </MapView>
       </View>
-      <Button title="Request seat" onPress={handleBook} />
-      <Button title="Open chat" onPress={() => navigation.navigate("Chat", { chatId: `${ride.id}_direct` })} />
+
+      <Text style={styles.route}>
+        {ride.origin.name} → {ride.destination.name}
+      </Text>
+      <Text style={styles.meta}>Departure: {ride.departureTime} · Seats: {ride.availableSeats}</Text>
+
+      <SectionHeader title="Book this ride" subtitle="Request a seat and coordinate via chat." />
+      <PrimaryButton label="REQUEST SEAT" onPress={handleBook} />
+      <View style={styles.gap} />
+      <OutlineButton
+        label="OPEN CHAT"
+        onPress={() => navigation.navigate("Chat", { chatId: `${ride.id}_direct` })}
+      />
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  mapWrap: { height: 200, borderRadius: 16, overflow: "hidden", marginBottom: 14 },
+  route: { fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: 4 },
+  meta: { fontSize: 13, color: colors.textMuted, marginBottom: 12 },
+  gap: { height: 10 },
+});

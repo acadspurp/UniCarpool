@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "../../services/auth";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { AuthSplitLayout } from "../../components/auth/AuthSplitLayout";
+import { TextField } from "../../components/ui/TextField";
+import { PrimaryButton } from "../../components/ui/PrimaryButton";
+import { colors } from "../../theme/colors";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -32,14 +35,20 @@ export function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>UniCarpool Login</Text>
+    <AuthSplitLayout
+      variant="login"
+      title="Sign In"
+      subtitle="Welcome back to UniCarpool"
+      promoTitle="Hello, Friend!"
+      promoText="Register with your PUP institutional email to post rides, find carpools, and chat with your campus community."
+      switchLabel="SIGN UP"
+      onSwitch={() => navigation.navigate("Signup")}
+    >
       <Controller
         control={control}
         name="email"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
+          <TextField
             autoCapitalize="none"
             keyboardType="email-address"
             placeholder="Email"
@@ -52,31 +61,18 @@ export function LoginScreen({ navigation }: any) {
         control={control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            secureTextEntry
-            placeholder="Password"
-            value={value}
-            onChangeText={onChange}
-          />
+          <TextField secureTextEntry placeholder="Password" value={value} onChangeText={onChange} />
         )}
       />
-      <Button title={loading ? "Signing in..." : "Login"} onPress={handleSubmit(onSubmit)} />
-      <View style={styles.spacer} />
-      <Button title="Create account" onPress={() => navigation.navigate("Signup")} />
-    </ScreenContainer>
+      <Pressable onPress={() => navigation.navigate("Welcome")} style={styles.backLink}>
+        <Text style={styles.backText}>← Back to overview</Text>
+      </Pressable>
+      <PrimaryButton label="SIGN IN" onPress={handleSubmit(onSubmit)} loading={loading} />
+    </AuthSplitLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-  },
-  spacer: { height: 12 },
+  backLink: { marginBottom: 16 },
+  backText: { color: colors.textMuted, fontSize: 13 },
 });

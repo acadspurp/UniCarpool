@@ -46,3 +46,10 @@ export async function updateRideStatus(rideId: string, status: Ride["status"]) {
   const rideRef = doc(db, "rides", rideId);
   return updateDoc(rideRef, { status, updatedAt: serverTimestamp() });
 }
+
+export function subscribeDriverRides(driverId: string, cb: (rides: Ride[]) => void) {
+  const ridesQuery = query(collection(db, "rides"), where("driverId", "==", driverId));
+  return onSnapshot(ridesQuery, (snapshot) => {
+    cb(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Ride) })));
+  });
+}
