@@ -59,7 +59,7 @@ const VEHICLE_PRIVACY_LABEL =
   "I agree to share my vehicle details (make, model, color, and plate number) with verified campus riders who view or book this ride, so they can identify the vehicle safely.";
 
 export function PostRideScreen({ navigation }: any) {
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const [step, setStep] = useState<"trip" | "vehicle">("trip");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -114,6 +114,22 @@ export function PostRideScreen({ navigation }: any) {
     }
     setVehiclePrivacyError(null);
 
+    // Firestore security rules rely on auth token fields (e.g. `email_verified`).
+    // Refresh right before writes so stale tokens don't cause permission-denied errors.
+    try {
+      await refreshUser();
+    } catch {
+      // If refresh fails, we'll still attempt to post and let Firestore return the real error.
+    }
+
+    if (!user.emailVerified) {
+      showMessage(
+        "Email verification required",
+        "Please verify your email in your inbox before posting a ride.",
+      );
+      return;
+    }
+
     const campusRole: CampusRole = profile?.campusRole ?? "student";
 
     try {
@@ -144,9 +160,15 @@ export function PostRideScreen({ navigation }: any) {
       showMessage("Ride posted", "Your ride is now visible to riders with your vehicle details.");
       navigation.goBack();
     } catch (error: unknown) {
+      const code = typeof error === "object" && error && "code" in error ? (error as any).code : null;
+      const isPermissionDenied = code === "permission-denied";
       showMessage(
-        "Could not post ride",
-        error instanceof Error ? error.message : "Please try again.",
+        isPermissionDenied ? "Could not post ride (permissions)" : "Could not post ride",
+        isPermissionDenied
+          ? "Your account may not be verified to post rides. Make sure your email is verified and belongs to the campus domain."
+          : error instanceof Error
+            ? error.message
+            : "Please try again.",
       );
     } finally {
       setLoading(false);
