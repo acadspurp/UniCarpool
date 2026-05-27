@@ -3,6 +3,11 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-nativ
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AppIcon, type AppIconName } from "../components/ui/AppIcon";
+import { MainAppHeader } from "../components/navigation/MainAppHeader";
+import { NavMenuModal } from "../components/navigation/NavMenuModal";
+import { NotificationsPanel } from "../components/navigation/NotificationsPanel";
+import { MobileShellProvider } from "../context/MobileShellContext";
+import { useResponsive } from "../hooks/useResponsive";
 import { useAuthStore } from "../store/authStore";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { AuthScreen } from "../screens/auth/AuthScreen";
@@ -29,61 +34,76 @@ function tabIcon(name: AppIconName) {
   );
 }
 
+const tabBarStyleWide = {
+  backgroundColor: colors.surface,
+  borderTopColor: colors.border,
+  borderTopWidth: 1,
+  paddingTop: 6,
+  paddingBottom: Platform.OS === "web" ? 8 : 10,
+  height: Platform.OS === "web" ? 64 : 68,
+} as const;
+
 function MainTabs() {
+  const { isWide } = useResponsive();
+
   return (
-    <Tabs.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
-        headerTitleStyle: { fontWeight: "700", fontSize: 17 },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginBottom: Platform.OS === "ios" ? 0 : 4 },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === "web" ? 8 : 10,
-          height: Platform.OS === "web" ? 64 : 68,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          headerShown: false,
-          tabBarIcon: tabIcon("home"),
+    <MobileShellProvider>
+      <Tabs.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.primary,
+          headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+          headerShown: isWide,
+          header: isWide ? undefined : (props) => <MainAppHeader {...props} />,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginBottom: Platform.OS === "ios" ? 0 : 4 },
+          tabBarStyle: isWide ? tabBarStyleWide : { display: "none", height: 0 },
         }}
-      />
-      <Tabs.Screen
-        name="FindRide"
-        component={FindRideScreen}
-        options={{
-          title: "Find Ride",
-          tabBarLabel: "Find Ride",
-          tabBarIcon: tabIcon("search"),
-        }}
-      />
-      <Tabs.Screen
-        name="MyRides"
-        component={MyRidesScreen}
-        options={{
-          title: "My Rides",
-          tabBarLabel: "My Rides",
-          tabBarIcon: tabIcon("car"),
-        }}
-      />
-      <Tabs.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          title: "Profile",
-          tabBarIcon: tabIcon("person"),
-        }}
-      />
-    </Tabs.Navigator>
+      >
+        <Tabs.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            headerShown: !isWide,
+            title: "",
+            tabBarIcon: tabIcon("home"),
+          }}
+        />
+        <Tabs.Screen
+          name="FindRide"
+          component={FindRideScreen}
+          options={{
+            title: isWide ? "Find Ride" : "",
+            tabBarLabel: "Find Ride",
+            tabBarIcon: tabIcon("search"),
+          }}
+        />
+        <Tabs.Screen
+          name="MyRides"
+          component={MyRidesScreen}
+          options={{
+            title: isWide ? "My Rides" : "",
+            tabBarLabel: "My Rides",
+            tabBarIcon: tabIcon("car"),
+          }}
+        />
+        <Tabs.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            title: isWide ? "Profile" : "",
+            tabBarIcon: tabIcon("person"),
+          }}
+        />
+      </Tabs.Navigator>
+      {!isWide && (
+        <>
+          <NavMenuModal />
+          <NotificationsPanel />
+        </>
+      )}
+    </MobileShellProvider>
   );
 }
 

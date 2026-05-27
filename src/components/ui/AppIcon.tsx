@@ -17,6 +17,8 @@ const WEB_GLYPHS: Partial<Record<string, string>> = {
   "eye-off-outline": "🙈",
   "chevron-down": "▼",
   "chevron-up": "▲",
+  menu: "☰",
+  close: "✕",
 };
 
 type Props = {

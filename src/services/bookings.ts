@@ -46,3 +46,10 @@ export function subscribeMyBookings(uid: string, cb: (bookings: Booking[]) => vo
     cb(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Booking) })));
   });
 }
+
+export function subscribeDriverBookings(driverId: string, cb: (bookings: Booking[]) => void) {
+  const bookingsQuery = query(collection(db, "bookings"), where("driverId", "==", driverId));
+  return onSnapshot(bookingsQuery, (snapshot) => {
+    cb(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Booking) })));
+  });
+}
