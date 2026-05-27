@@ -15,8 +15,13 @@ import { useAuthStore } from "../store/authStore";
 import { postRide } from "../services/rides";
 import { createOrUpdateProfile, subscribeProfile } from "../services/profile";
 import { showMessage } from "../utils/alert";
-import { isVehicleComplete, toVehicleInfo } from "../utils/vehicle";
-import type { CampusRole, Profile } from "../types/models";
+import {
+  formatVehicle,
+  isVehicleComplete,
+  profileHasCompleteVehicle,
+  toVehicleInfo,
+} from "../utils/vehicle";
+import type { CampusRole, Profile, VehicleInfo } from "../types/models";
 import { colors } from "../theme/colors";
 
 type PostRideValues = {
@@ -24,13 +29,6 @@ type PostRideValues = {
   destination: string;
   pricePerPerson: string;
   notes: string;
-};
-
-type VehicleValues = {
-  vehicleMake: string;
-  vehicleModel: string;
-  vehicleColor: string;
-  vehiclePlate: string;
 };
 
 type PendingTrip = PostRideValues & {
@@ -58,7 +56,7 @@ function mergeDeparture(date: Date, time: Date) {
 }
 
 const VEHICLE_PRIVACY_LABEL =
-  "I agree to share my vehicle details (make, model, color, and plate if provided) with verified campus riders who view or book this ride, so they can identify the vehicle safely.";
+  "I agree to share my vehicle details (make, model, color, and plate number) with verified campus riders who view or book this ride, so they can identify the vehicle safely.";
 
 export function PostRideScreen({ navigation }: any) {
   const { user } = useAuthStore();
@@ -73,6 +71,11 @@ export function PostRideScreen({ navigation }: any) {
   const [departureTime, setDepartureTime] = useState(defaultDepartureTime);
   const [availableSeats, setAvailableSeats] = useState(1);
 
+  const [vehicleMake, setVehicleMake] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState("");
+
   const tripForm = useForm<PostRideValues>({
     defaultValues: {
       origin: "",
@@ -82,14 +85,7 @@ export function PostRideScreen({ navigation }: any) {
     },
   });
 
-  const vehicleForm = useForm<VehicleValues>({
-    defaultValues: {
-      vehicleMake: "",
-      vehicleModel: "",
-      vehicleColor: "",
-      vehiclePlate: "",
-    },
-  });
+  const hasSavedVehicle = profileHasCompleteVehicle(profile);
 
   useEffect(() => {
     if (!user) return;
@@ -97,51 +93,16 @@ export function PostRideScreen({ navigation }: any) {
     return () => unsub();
   }, [user]);
 
-  const prefillVehicleForm = () => {
+  const loadVehicleFieldsFromProfile = () => {
     const v = profile?.vehicle;
-    vehicleForm.reset({
-      vehicleMake: v?.make ?? "",
-      vehicleModel: v?.model ?? "",
-      vehicleColor: v?.color ?? "",
-      vehiclePlate: v?.plate ?? "",
-    });
+    setVehicleMake(v?.make ?? "");
+    setVehicleModel(v?.model ?? "");
+    setVehicleColor(v?.color ?? "");
+    setVehiclePlate(v?.plate ?? "");
   };
 
-  const onContinueToVehicle = (values: PostRideValues) => {
-    if (!values.origin.trim() || !values.destination.trim()) {
-      showMessage("Missing details", "Please enter origin and destination.");
-      return;
-    }
-    if (!values.pricePerPerson.trim() || Number(values.pricePerPerson) <= 0) {
-      showMessage("Missing amount", "Please enter how much each person should pay.");
-      return;
-    }
-    setPendingTrip({
-      ...values,
-      departureDate,
-      departureTime,
-      availableSeats,
-    });
-    setVehiclePrivacyAccepted(false);
-    setVehiclePrivacyError(null);
-    prefillVehicleForm();
-    setStep("vehicle");
-  };
-
-  const onPublishRide = async (vehicleValues: VehicleValues) => {
-    if (!user || !pendingTrip) return;
-
-    const vehicle = toVehicleInfo({
-      make: vehicleValues.vehicleMake,
-      model: vehicleValues.vehicleModel,
-      color: vehicleValues.vehicleColor,
-      plate: vehicleValues.vehiclePlate,
-    });
-
-    if (!isVehicleComplete(vehicle)) {
-      showMessage("Vehicle required", "Please enter your vehicle make, model, and color.");
-      return;
-    }
+  const publishRide = async (vehicle: VehicleInfo, trip: PendingTrip) => {
+    if (!user) return;
 
     if (!vehiclePrivacyAccepted) {
       setVehiclePrivacyError("Please agree to share vehicle details with riders before publishing.");
@@ -170,13 +131,13 @@ export function PostRideScreen({ navigation }: any) {
 
       await postRide({
         driverId: user.uid,
-        origin: { name: pendingTrip.origin.trim(), lat: 0, lng: 0 },
-        destination: { name: pendingTrip.destination.trim(), lat: 0, lng: 0 },
-        departureTime: mergeDeparture(pendingTrip.departureDate, pendingTrip.departureTime),
-        availableSeats: pendingTrip.availableSeats,
-        notes: pendingTrip.notes.trim(),
+        origin: { name: trip.origin.trim().toUpperCase(), lat: 0, lng: 0 },
+        destination: { name: trip.destination.trim().toUpperCase(), lat: 0, lng: 0 },
+        departureTime: mergeDeparture(trip.departureDate, trip.departureTime),
+        availableSeats: trip.availableSeats,
+        notes: trip.notes.trim(),
         status: "open",
-        priceShareNote: `₱${pendingTrip.pricePerPerson.trim()} per person`,
+        priceShareNote: `₱${trip.pricePerPerson.trim()} per person`,
         vehicle,
       });
 
@@ -192,6 +153,56 @@ export function PostRideScreen({ navigation }: any) {
     }
   };
 
+  const onTripStepSubmit = (values: PostRideValues) => {
+    if (!values.origin.trim() || !values.destination.trim()) {
+      showMessage("Missing details", "Please enter origin and destination.");
+      return;
+    }
+    if (!values.pricePerPerson.trim() || Number(values.pricePerPerson) <= 0) {
+      showMessage("Missing amount", "Please enter how much each person should pay.");
+      return;
+    }
+
+    const trip: PendingTrip = {
+      ...values,
+      departureDate,
+      departureTime,
+      availableSeats,
+    };
+    setPendingTrip(trip);
+
+    if (hasSavedVehicle && profile?.vehicle) {
+      void publishRide(profile.vehicle, trip);
+      return;
+    }
+
+    setVehiclePrivacyAccepted(false);
+    setVehiclePrivacyError(null);
+    loadVehicleFieldsFromProfile();
+    setStep("vehicle");
+  };
+
+  const onPublishFromVehicleStep = () => {
+    if (!pendingTrip) return;
+
+    const vehicle = toVehicleInfo({
+      make: vehicleMake,
+      model: vehicleModel,
+      color: vehicleColor,
+      plate: vehiclePlate,
+    });
+
+    if (!isVehicleComplete(vehicle)) {
+      showMessage(
+        "Vehicle required",
+        "Please enter make, model, color, and plate number.",
+      );
+      return;
+    }
+
+    void publishRide(vehicle, pendingTrip);
+  };
+
   const today = defaultDepartureDate();
 
   if (step === "vehicle") {
@@ -203,39 +214,33 @@ export function PostRideScreen({ navigation }: any) {
           subtitle="Required before your ride goes live. Riders will see this to identify your car safely."
         />
         <View style={styles.card}>
-          <Controller
-            control={vehicleForm.control}
-            name="vehicleMake"
-            render={({ field: { onChange, value } }) => (
-              <TextField label="Make" placeholder="Toyota" value={value} onChangeText={onChange} />
-            )}
+          <TextField
+            label="Make"
+            placeholder="TOYOTA"
+            value={vehicleMake}
+            onChangeText={setVehicleMake}
+            uppercase
           />
-          <Controller
-            control={vehicleForm.control}
-            name="vehicleModel"
-            render={({ field: { onChange, value } }) => (
-              <TextField label="Model" placeholder="Vios" value={value} onChangeText={onChange} />
-            )}
+          <TextField
+            label="Model"
+            placeholder="VIOS"
+            value={vehicleModel}
+            onChangeText={setVehicleModel}
+            uppercase
           />
-          <Controller
-            control={vehicleForm.control}
-            name="vehicleColor"
-            render={({ field: { onChange, value } }) => (
-              <TextField label="Color" placeholder="White" value={value} onChangeText={onChange} />
-            )}
+          <TextField
+            label="Color"
+            placeholder="WHITE"
+            value={vehicleColor}
+            onChangeText={setVehicleColor}
+            uppercase
           />
-          <Controller
-            control={vehicleForm.control}
-            name="vehiclePlate"
-            render={({ field: { onChange, value } }) => (
-              <TextField
-                label="Plate number (optional)"
-                placeholder="ABC 1234"
-                value={value}
-                onChangeText={onChange}
-                autoCapitalize="characters"
-              />
-            )}
+          <TextField
+            label="Plate number"
+            placeholder="ABC 1234"
+            value={vehiclePlate}
+            onChangeText={setVehiclePlate}
+            uppercase
           />
 
           <PrivacyConsent
@@ -248,18 +253,9 @@ export function PostRideScreen({ navigation }: any) {
             error={vehiclePrivacyError ?? undefined}
           />
 
-          <PrimaryButton
-            label="PUBLISH RIDE"
-            onPress={vehicleForm.handleSubmit(onPublishRide)}
-            loading={loading}
-          />
+          <PrimaryButton label="PUBLISH RIDE" onPress={onPublishFromVehicleStep} loading={loading} />
           <View style={styles.backWrap}>
-            <OutlineButton
-              label="BACK TO TRIP DETAILS"
-              onPress={() => {
-                setStep("trip");
-              }}
-            />
+            <OutlineButton label="BACK TO TRIP DETAILS" onPress={() => setStep("trip")} />
           </View>
         </View>
       </ScreenContainer>
@@ -268,7 +264,7 @@ export function PostRideScreen({ navigation }: any) {
 
   return (
     <ScreenContainer>
-      <Text style={styles.step}>Step 1 of 2</Text>
+      <Text style={styles.step}>{hasSavedVehicle ? "Ready to publish" : "Step 1 of 2"}</Text>
       <SectionHeader
         title="Post a ride"
         subtitle="Share your trip with fellow PUP commuters. Cost-sharing is arranged offline."
@@ -333,9 +329,33 @@ export function PostRideScreen({ navigation }: any) {
             />
           )}
         />
+
+        {hasSavedVehicle && profile?.vehicle ? (
+          <View style={styles.savedVehicleCard}>
+            <Text style={styles.savedVehicleTitle}>Vehicle from your profile</Text>
+            <Text style={styles.savedVehicleText}>{formatVehicle(profile.vehicle)}</Text>
+            <Text style={styles.savedVehicleHint}>
+              Step 2 is skipped because your vehicle is already on file.
+            </Text>
+          </View>
+        ) : null}
+
+        {hasSavedVehicle ? (
+          <PrivacyConsent
+            checked={vehiclePrivacyAccepted}
+            onToggle={() => {
+              setVehiclePrivacyAccepted((v) => !v);
+              setVehiclePrivacyError(null);
+            }}
+            label={VEHICLE_PRIVACY_LABEL}
+            error={vehiclePrivacyError ?? undefined}
+          />
+        ) : null}
+
         <PrimaryButton
-          label="CONTINUE"
-          onPress={tripForm.handleSubmit(onContinueToVehicle)}
+          label={hasSavedVehicle ? "PUBLISH RIDE" : "CONTINUE"}
+          onPress={tripForm.handleSubmit(onTripStepSubmit)}
+          loading={loading}
         />
       </View>
     </ScreenContainer>
@@ -358,5 +378,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  savedVehicleCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  savedVehicleTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.primaryDark,
+    marginBottom: 6,
+  },
+  savedVehicleText: { fontSize: 15, fontWeight: "700", color: colors.text, marginBottom: 6 },
+  savedVehicleHint: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   backWrap: { marginTop: 10 },
 });

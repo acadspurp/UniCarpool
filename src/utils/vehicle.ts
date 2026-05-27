@@ -1,4 +1,4 @@
-import type { VehicleInfo } from "../types/models";
+import type { Profile, VehicleInfo } from "../types/models";
 
 export function formatVehicle(vehicle?: VehicleInfo | null): string {
   if (!vehicle) return "";
@@ -11,9 +11,19 @@ export function isVehicleComplete(vehicle: {
   make: string;
   model: string;
   color: string;
-  plate?: string;
+  plate: string;
 }): boolean {
-  return Boolean(vehicle.make.trim() && vehicle.model.trim() && vehicle.color.trim());
+  return Boolean(
+    vehicle.make.trim() &&
+      vehicle.model.trim() &&
+      vehicle.color.trim() &&
+      vehicle.plate.trim(),
+  );
+}
+
+export function profileHasCompleteVehicle(profile: Profile | null | undefined): boolean {
+  if (!profile?.vehicle) return false;
+  return isVehicleComplete(profile.vehicle);
 }
 
 export function toVehicleInfo(fields: {
@@ -23,9 +33,9 @@ export function toVehicleInfo(fields: {
   plate: string;
 }): VehicleInfo {
   return {
-    make: fields.make.trim(),
-    model: fields.model.trim(),
-    color: fields.color.trim(),
-    plate: fields.plate.trim(),
+    make: fields.make.trim().toUpperCase(),
+    model: fields.model.trim().toUpperCase(),
+    color: fields.color.trim().toUpperCase(),
+    plate: fields.plate.trim().toUpperCase(),
   };
 }

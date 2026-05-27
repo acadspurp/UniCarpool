@@ -11,6 +11,7 @@ import { createOrUpdateProfile, subscribeProfile } from "../services/profile";
 import { logout, CAMPUS_DOMAIN } from "../services/auth";
 import { formatCampusRole } from "../constants/campusRoles";
 import { confirmAction, showMessage } from "../utils/alert";
+import { isVehicleComplete, toVehicleInfo } from "../utils/vehicle";
 import type { CampusRole, Profile } from "../types/models";
 import { colors } from "../theme/colors";
 
@@ -62,8 +63,26 @@ export function ProfileScreen() {
 
   const onSave = async (values: ProfileValues) => {
     if (!user) return;
-    const hasVehicle =
-      values.vehicleMake || values.vehicleModel || values.vehicleColor || values.vehiclePlate;
+    const vehicleDraft = toVehicleInfo({
+      make: values.vehicleMake,
+      model: values.vehicleModel,
+      color: values.vehicleColor,
+      plate: values.vehiclePlate,
+    });
+    const hasAnyVehicleField = Boolean(
+      values.vehicleMake.trim() ||
+        values.vehicleModel.trim() ||
+        values.vehicleColor.trim() ||
+        values.vehiclePlate.trim(),
+    );
+
+    if (hasAnyVehicleField && !isVehicleComplete(vehicleDraft)) {
+      showMessage(
+        "Incomplete vehicle",
+        "Please enter make, model, color, and plate number, or leave all vehicle fields empty.",
+      );
+      return;
+    }
 
     try {
       setLoading(true);
@@ -75,16 +94,7 @@ export function ProfileScreen() {
         campusRole,
         phone: values.phone,
         isVerifiedCampus: user.emailVerified,
-        ...(hasVehicle
-          ? {
-              vehicle: {
-                make: values.vehicleMake,
-                model: values.vehicleModel,
-                color: values.vehicleColor,
-                plate: values.vehiclePlate,
-              },
-            }
-          : {}),
+        ...(hasAnyVehicleField ? { vehicle: vehicleDraft } : {}),
       });
       showMessage("Profile updated", "Your information has been saved.");
     } catch (error: unknown) {
@@ -164,33 +174,59 @@ export function ProfileScreen() {
 
         {vehicleOpen ? (
           <View style={styles.vehicleSection}>
-            <Text style={styles.vehicleHint}>Optional — shown when you post rides as a driver.</Text>
+            <Text style={styles.vehicleHint}>
+              Optional — if you add a vehicle, include make, model, color, and plate. Used when you post rides.
+            </Text>
             <Controller
               control={control}
               name="vehicleMake"
               render={({ field: { onChange, value } }) => (
-                <TextField label="Make" placeholder="Toyota" value={value} onChangeText={onChange} />
+                <TextField
+                  label="Make"
+                  placeholder="TOYOTA"
+                  value={value}
+                  onChangeText={onChange}
+                  uppercase
+                />
               )}
             />
             <Controller
               control={control}
               name="vehicleModel"
               render={({ field: { onChange, value } }) => (
-                <TextField label="Model" placeholder="Vios" value={value} onChangeText={onChange} />
+                <TextField
+                  label="Model"
+                  placeholder="VIOS"
+                  value={value}
+                  onChangeText={onChange}
+                  uppercase
+                />
               )}
             />
             <Controller
               control={control}
               name="vehicleColor"
               render={({ field: { onChange, value } }) => (
-                <TextField label="Color" placeholder="White" value={value} onChangeText={onChange} />
+                <TextField
+                  label="Color"
+                  placeholder="WHITE"
+                  value={value}
+                  onChangeText={onChange}
+                  uppercase
+                />
               )}
             />
             <Controller
               control={control}
               name="vehiclePlate"
               render={({ field: { onChange, value } }) => (
-                <TextField label="Plate (optional)" placeholder="ABC 1234" value={value} onChangeText={onChange} />
+                <TextField
+                  label="Plate number"
+                  placeholder="ABC 1234"
+                  value={value}
+                  onChangeText={onChange}
+                  uppercase
+                />
               )}
             />
           </View>

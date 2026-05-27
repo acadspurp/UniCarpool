@@ -21,8 +21,11 @@ export function TextField({ label, error, hint, uppercase, style, onChangeText, 
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error && styles.inputError, style]}
         autoCapitalize={uppercase ? "characters" : props.autoCapitalize}
-        onChangeText={handleChange}
+        autoCorrect={uppercase ? false : props.autoCorrect}
+        autoComplete={uppercase ? "off" : props.autoComplete}
         {...props}
+        value={props.value ?? ""}
+        onChangeText={handleChange}
       />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
