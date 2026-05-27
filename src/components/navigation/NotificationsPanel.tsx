@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Easing,
   Modal,
   Platform,
   Pressable,
@@ -13,6 +15,10 @@ import { useAuthStore } from "../../store/authStore";
 import { subscribeMyBookings, subscribeDriverBookings } from "../../services/bookings";
 import { Booking } from "../../types/models";
 import { colors } from "../../theme/colors";
+
+const SLIDE_DISTANCE = 480;
+const OPEN_MS = 280;
+const CLOSE_MS = 260;
 
 type LogItem = {
   id: string;
@@ -72,6 +78,59 @@ export function NotificationsPanel() {
   const { user } = useAuthStore();
   const [riderBookings, setRiderBookings] = useState<Booking[]>([]);
   const [driverBookings, setDriverBookings] = useState<Booking[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const slideY = useRef(new Animated.Value(SLIDE_DISTANCE)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const closingRef = useRef(false);
+
+  const animateOpen = useCallback(() => {
+    slideY.setValue(SLIDE_DISTANCE);
+    backdropOpacity.setValue(0);
+    Animated.parallel([
+      Animated.timing(slideY, {
+        toValue: 0,
+        duration: OPEN_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: OPEN_MS,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [slideY, backdropOpacity]);
+
+  const dismiss = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    Animated.parallel([
+      Animated.timing(slideY, {
+        toValue: SLIDE_DISTANCE,
+        duration: CLOSE_MS,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: CLOSE_MS,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      closingRef.current = false;
+      if (finished) {
+        setMounted(false);
+        closeNotifications();
+      }
+    });
+  }, [slideY, backdropOpacity, closeNotifications]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    closingRef.current = false;
+    setMounted(true);
+    requestAnimationFrame(() => animateOpen());
+  }, [notificationsOpen, animateOpen]);
 
   useEffect(() => {
     if (!notificationsOpen || !user) return;
@@ -88,26 +147,34 @@ export function NotificationsPanel() {
     [riderBookings, driverBookings],
   );
 
-  if (!notificationsOpen) return null;
+  if (!mounted) return null;
 
   return (
     <Modal
       visible
       transparent
-      animationType="slide"
-      onRequestClose={closeNotifications}
+      animationType="none"
+      onRequestClose={dismiss}
       statusBarTranslucent
     >
       <View style={styles.root}>
-        <Pressable
-          style={styles.backdropTap}
-          onPress={closeNotifications}
-          accessibilityLabel="Close notifications"
-        />
-        <View style={[styles.panel, Platform.OS === "web" && styles.panelWeb]}>
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <Pressable
+            style={styles.backdropTap}
+            onPress={dismiss}
+            accessibilityLabel="Close notifications"
+          />
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.panel,
+            Platform.OS === "web" && styles.panelWeb,
+            { transform: [{ translateY: slideY }] },
+          ]}
+        >
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Notifications</Text>
-            <Pressable onPress={closeNotifications} hitSlop={8}>
+            <Pressable onPress={dismiss} hitSlop={8}>
               <Text style={styles.close}>Close</Text>
             </Pressable>
           </View>
@@ -133,7 +200,7 @@ export function NotificationsPanel() {
               ))
             )}
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -144,9 +211,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
   },
-  backdropTap: {
+  backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  backdropTap: {
+    flex: 1,
   },
   panel: {
     backgroundColor: colors.surface,
@@ -157,7 +227,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderBottomWidth: 0,
-    zIndex: 2,
   },
   panelWeb: {
     maxHeight: "72vh" as unknown as number,
