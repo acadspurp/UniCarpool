@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuthStore } from "../store/authStore";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { AuthScreen } from "../screens/auth/AuthScreen";
-import { VerifyEmailScreen } from "../screens/auth/VerifyEmailScreen";
+import { OtpVerifyScreen } from "../screens/auth/OtpVerifyScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { PostRideScreen } from "../screens/PostRideScreen";
 import { FindRideScreen } from "../screens/FindRideScreen";
@@ -85,7 +85,7 @@ export function AppNavigator() {
   if (!user.emailVerified) {
     return (
       <Stack.Navigator screenOptions={authScreenOptions}>
-        <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+        <Stack.Screen name="VerifyEmail" component={OtpVerifyScreen} />
       </Stack.Navigator>
     );
   }

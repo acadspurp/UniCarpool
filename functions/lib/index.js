@@ -33,7 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupExpiredRides = exports.notifyOnNewMessage = exports.notifyOnBookingUpdate = exports.setCampusVerifiedClaim = void 0;
+exports.cleanupExpiredRides = exports.notifyOnNewMessage = exports.notifyOnBookingUpdate = exports.setCampusVerifiedClaim = exports.verifyEmailOtp = exports.sendEmailOtp = void 0;
+var otp_1 = require("./otp");
+Object.defineProperty(exports, "sendEmailOtp", { enumerable: true, get: function () { return otp_1.sendEmailOtp; } });
+Object.defineProperty(exports, "verifyEmailOtp", { enumerable: true, get: function () { return otp_1.verifyEmailOtp; } });
 const firestore_1 = require("firebase-functions/v2/firestore");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const firebase_functions_1 = require("firebase-functions");

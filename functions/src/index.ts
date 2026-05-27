@@ -1,3 +1,4 @@
+export {sendEmailOtp, verifyEmailOtp} from "./otp";
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions";
