@@ -4,9 +4,10 @@ import { colors } from "../../theme/colors";
 type Props = TextInputProps & {
   label?: string;
   error?: string;
+  hint?: string;
 };
 
-export function TextField({ label, error, style, ...props }: Props) {
+export function TextField({ label, error, hint, style, ...props }: Props) {
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -15,6 +16,7 @@ export function TextField({ label, error, style, ...props }: Props) {
         style={[styles.input, error && styles.inputError, style]}
         {...props}
       />
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -34,5 +36,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   inputError: { borderColor: colors.danger },
+  hint: { fontSize: 12, color: colors.textMuted, marginTop: 6, lineHeight: 17 },
   error: { marginTop: 6, fontSize: 12, color: colors.danger },
 });

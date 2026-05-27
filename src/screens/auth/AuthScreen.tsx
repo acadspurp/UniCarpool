@@ -214,9 +214,11 @@ export function AuthScreen({ navigation, route }: any) {
         name="fullName"
         render={({ field: { onChange, value } }) => (
           <TextField
+            label="Full name"
             placeholder="Full name"
             value={value}
             onChangeText={onChange}
+            hint="Double-check your name — it cannot be changed after you sign up."
             error={firstError(signupForm.formState.errors, "fullName")}
           />
         )}

@@ -15,7 +15,6 @@ import type { CampusRole, Profile } from "../types/models";
 import { colors } from "../theme/colors";
 
 type ProfileValues = {
-  fullName: string;
   department: string;
   phone: string;
   vehicleMake: string;
@@ -31,7 +30,6 @@ export function ProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const { control, handleSubmit, reset } = useForm<ProfileValues>({
     defaultValues: {
-      fullName: user?.displayName || "",
       department: "",
       phone: "",
       vehicleMake: "",
@@ -47,7 +45,6 @@ export function ProfileScreen() {
       setProfile(data);
       if (data) {
         reset({
-          fullName: data.fullName || user.displayName || "",
           department: data.department || "",
           phone: data.phone || "",
           vehicleMake: data.vehicle?.make || "",
@@ -61,6 +58,7 @@ export function ProfileScreen() {
   }, [user, reset]);
 
   const campusRole: CampusRole = profile?.campusRole ?? "student";
+  const fullName = profile?.fullName?.trim() || user?.displayName?.trim() || "";
 
   const onSave = async (values: ProfileValues) => {
     if (!user) return;
@@ -72,7 +70,7 @@ export function ProfileScreen() {
       await createOrUpdateProfile({
         uid: user.uid,
         email: user.email || "",
-        fullName: values.fullName,
+        fullName,
         department: values.department,
         campusRole,
         phone: values.phone,
@@ -119,12 +117,10 @@ export function ProfileScreen() {
       </Text>
 
       <View style={styles.card}>
-        <Controller
-          control={control}
-          name="fullName"
-          render={({ field: { onChange, value } }) => (
-            <TextField label="Full name" placeholder="Full name" value={value} onChangeText={onChange} />
-          )}
+        <ReadOnlyField
+          label="Full name"
+          value={fullName || "—"}
+          hint="Set when you signed up and cannot be changed here."
         />
         <ReadOnlyField
           label="Campus role"
