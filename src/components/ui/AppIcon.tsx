@@ -19,6 +19,7 @@ const WEB_GLYPHS: Partial<Record<string, string>> = {
   "chevron-up": "▲",
   menu: "☰",
   close: "✕",
+  "chevron-back": "←",
 };
 
 type Props = {

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AppIcon, type AppIconName } from "../components/ui/AppIcon";
 import { MainAppHeader } from "../components/navigation/MainAppHeader";
+import { StackBrandHeader } from "../components/navigation/StackBrandHeader";
 import { NavMenuModal } from "../components/navigation/NavMenuModal";
 import { NotificationsPanel } from "../components/navigation/NotificationsPanel";
 import { MobileShellProvider } from "../context/MobileShellContext";
@@ -47,7 +48,7 @@ function MainTabs() {
   const { isWide } = useResponsive();
 
   return (
-    <MobileShellProvider>
+    <>
       <Tabs.Navigator
         screenOptions={{
           headerShown: true,
@@ -91,8 +92,7 @@ function MainTabs() {
         />
       </Tabs.Navigator>
       {!isWide && <NavMenuModal />}
-      <NotificationsPanel />
-    </MobileShellProvider>
+    </>
   );
 }
 
@@ -141,18 +141,23 @@ export function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
-        headerTitleStyle: { fontWeight: "700" },
-      }}
-    >
-      <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="PostRide" component={PostRideScreen} options={{ title: "Post Ride" }} />
-      <Stack.Screen name="RideDetails" component={RideDetailsScreen} options={{ title: "Ride Details" }} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
-    </Stack.Navigator>
+    <MobileShellProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen
+          name="PostRide"
+          component={PostRideScreen}
+          options={{
+            headerShown: true,
+            header: () => <StackBrandHeader />,
+            title: "",
+          }}
+        />
+        <Stack.Screen name="RideDetails" component={RideDetailsScreen} options={{ title: "Ride Details" }} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+      </Stack.Navigator>
+      <NotificationsPanel />
+    </MobileShellProvider>
   );
 }
 
