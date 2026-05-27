@@ -16,6 +16,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CAMPUS_DOMAIN, signIn, signUp } from "../../services/auth";
 import { TextField } from "../../components/ui/TextField";
+import { PasswordField } from "../../components/ui/PasswordField";
 import { PrimaryButton } from "../../components/ui/PrimaryButton";
 import { OutlineButton } from "../../components/ui/OutlineButton";
 import { colors } from "../../theme/colors";
@@ -120,7 +121,7 @@ export function AuthScreen({ navigation, route }: any) {
         control={loginForm.control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextField secureTextEntry placeholder="Password" value={value} onChangeText={onChange} />
+          <PasswordField placeholder="Password" value={value} onChangeText={onChange} />
         )}
       />
     </>
@@ -152,7 +153,7 @@ export function AuthScreen({ navigation, route }: any) {
         control={signupForm.control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextField secureTextEntry placeholder="Password" value={value} onChangeText={onChange} />
+          <PasswordField placeholder="Password" value={value} onChangeText={onChange} />
         )}
       />
     </>
