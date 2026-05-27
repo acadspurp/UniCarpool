@@ -4,6 +4,12 @@ type SendOtpParams = {
 };
 
 export async function sendOtpEmail({ to, code }: SendOtpParams) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  if (brevoApiKey) {
+    await sendWithBrevoApi(brevoApiKey, to, code);
+    return;
+  }
+
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
     await sendWithResend(resendKey, to, code);
@@ -18,8 +24,47 @@ export async function sendOtpEmail({ to, code }: SendOtpParams) {
   }
 
   throw new Error(
-    "Email is not configured. Set RESEND_API_KEY or OTP_SMTP_USER + OTP_SMTP_PASS on the server.",
+    "Email is not configured. Set BREVO_API_KEY, RESEND_API_KEY, or OTP_SMTP_USER + OTP_SMTP_PASS on the server.",
   );
+}
+
+function parseFromAddress(from: string) {
+  const match = from.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (match) {
+    return {name: match[1] || "UniCarpool", email: match[2]};
+  }
+  return {name: "UniCarpool", email: from.trim()};
+}
+
+async function sendWithBrevoApi(apiKey: string, to: string, code: string) {
+  const from = process.env.OTP_SMTP_FROM ?? "UniCarpool <noreply@example.com>";
+  const sender = parseFromAddress(from);
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{email: to}],
+      subject: "Your UniCarpool verification code",
+      htmlContent: `
+        <div style="font-family:Arial,sans-serif;line-height:1.5">
+          <h2>UniCarpool verification</h2>
+          <p>Your 6-digit code is:</p>
+          <p style="font-size:28px;font-weight:bold;letter-spacing:6px">${code}</p>
+          <p>This code expires in 10 minutes.</p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    console.error("Brevo API error", body);
+    throw new Error("Brevo API failed to send the verification email.");
+  }
 }
 
 async function sendWithResend(apiKey: string, to: string, code: string) {
