@@ -4,8 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuthStore } from "../store/authStore";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
-import { LoginScreen } from "../screens/auth/LoginScreen";
-import { SignupScreen } from "../screens/auth/SignupScreen";
+import { AuthScreen } from "../screens/auth/AuthScreen";
 import { VerifyEmailScreen } from "../screens/auth/VerifyEmailScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { PostRideScreen } from "../screens/PostRideScreen";
@@ -76,8 +75,7 @@ export function AppNavigator() {
     return (
       <Stack.Navigator screenOptions={authScreenOptions} initialRouteName="Welcome">
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="Auth" component={AuthScreen} />
       </Stack.Navigator>
     );
   }

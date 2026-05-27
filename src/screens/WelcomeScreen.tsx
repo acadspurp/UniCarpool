@@ -44,8 +44,12 @@ export function WelcomeScreen({ navigation }: any) {
             Campus carpooling for students, faculty, and staff — share rides, save costs, travel together.
           </Text>
           <View style={styles.ctaRow}>
-            <PrimaryButton label="GET STARTED" onPress={() => navigation.navigate("Signup")} variant="accent" />
-            <OutlineButton label="SIGN IN" onPress={() => navigation.navigate("Login")} />
+            <PrimaryButton
+              label="GET STARTED"
+              onPress={() => navigation.navigate("Auth", { mode: "signup" })}
+              variant="accent"
+            />
+            <OutlineButton label="SIGN IN" onPress={() => navigation.navigate("Auth", { mode: "login" })} />
           </View>
         </View>
 
@@ -80,7 +84,10 @@ export function WelcomeScreen({ navigation }: any) {
           </Text>
         </View>
 
-        <PrimaryButton label="CREATE CAMPUS ACCOUNT" onPress={() => navigation.navigate("Signup")} />
+        <PrimaryButton
+          label="CREATE CAMPUS ACCOUNT"
+          onPress={() => navigation.navigate("Auth", { mode: "signup" })}
+        />
       </View>
     </ScrollView>
   );
