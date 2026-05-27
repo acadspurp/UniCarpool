@@ -1,4 +1,6 @@
-import { Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { useFonts } from "expo-font";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "./src/theme/colors";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -11,6 +13,18 @@ if (Platform.OS !== "web") {
 }
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider style={styles.root}>
@@ -32,5 +46,12 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web"
       ? { minHeight: "100vh" as unknown as number, width: "100%" as unknown as number }
       : {}),
+  },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+    ...(Platform.OS === "web" ? { minHeight: "100vh" as unknown as number } : {}),
   },
 });

@@ -6,6 +6,9 @@
     "userInterfaceStyle": "light",
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
