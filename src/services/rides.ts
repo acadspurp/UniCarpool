@@ -25,24 +25,19 @@ export function subscribeOpenRides(
   cb: (rides: Ride[]) => void,
   destinationName?: string,
 ) {
-  const normalizedDestination = destinationName?.trim()
-    ? destinationName.trim().toUpperCase()
-    : undefined;
+  const normalizedDestination = destinationName?.trim().toUpperCase() || "";
+  const ridesQuery = query(collection(db, "rides"), where("status", "==", "open"));
 
-  const baseQuery = normalizedDestination
-    ? query(
-        collection(db, "rides"),
-        where("status", "==", "open"),
-        where("destination.name", "==", normalizedDestination),
-        orderBy("departureTime", "asc"),
-      )
-    : query(
-        collection(db, "rides"),
-        where("status", "==", "open"),
-        orderBy("departureTime", "asc"),
-      );
-  return onSnapshot(baseQuery, (snapshot) => {
-    cb(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Ride) })));
+  return onSnapshot(ridesQuery, (snapshot) => {
+    const allOpenRides = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Ride) }));
+    const filtered = normalizedDestination
+      ? allOpenRides.filter((ride) =>
+          ride.destination?.name?.toUpperCase().includes(normalizedDestination),
+        )
+      : allOpenRides;
+
+    filtered.sort((a, b) => a.departureTime.localeCompare(b.departureTime));
+    cb(filtered);
   });
 }
 
