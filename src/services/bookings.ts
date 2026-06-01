@@ -10,7 +10,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { updateRideStatus } from "./rides";
+import { getRideTotalSeats, updateRideAvailability } from "./rides";
 import { Booking, Ride } from "../types/models";
 
 const ACTIVE_BOOKING_STATUSES: Booking["status"][] = ["pending", "accepted"];
@@ -79,17 +79,26 @@ export async function acceptBookingRequest(
   if (booking.status !== "pending") {
     throw new Error("This request is no longer pending.");
   }
+  if (ride.status !== "open") {
+    throw new Error("This ride is no longer accepting riders.");
+  }
 
+  const totalSeats = getRideTotalSeats(ride);
   const seatsAfter = acceptedSeatsOnRide + booking.seatsRequested;
-  if (seatsAfter > ride.availableSeats) {
+  if (seatsAfter > totalSeats) {
     throw new Error("Not enough seats left on this ride.");
   }
 
-  await updateBookingStatus(booking.id, "accepted");
+  const seatsRemaining = totalSeats - seatsAfter;
+  const persistedTotal = ride.totalSeats ?? totalSeats;
 
-  if (seatsAfter >= ride.availableSeats) {
-    await updateRideStatus(ride.id, "full");
-  }
+  await updateBookingStatus(booking.id, "accepted");
+  await updateRideAvailability(
+    ride.id,
+    seatsRemaining,
+    seatsRemaining <= 0 ? "full" : "open",
+    persistedTotal,
+  );
 }
 
 export async function rejectBookingRequest(bookingId: string) {

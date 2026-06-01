@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { RideDetailsActions } from "../components/rides/RideDetailsActions";
+import { useRide } from "../hooks/useRide";
 import { formatDepartureLabel } from "../utils/date";
 import { formatVehicle } from "../utils/vehicle";
 import { colors } from "../theme/colors";
 
 export function RideDetailsScreen({ route, navigation }: any) {
-  const { ride } = route.params;
+  const { ride: initialRide, rideId } = route.params;
+  const ride = useRide(rideId ?? initialRide?.id, initialRide);
 
   return (
     <ScreenContainer>

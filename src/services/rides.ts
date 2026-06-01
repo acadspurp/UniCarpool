@@ -29,7 +29,9 @@ export function subscribeOpenRides(
   const ridesQuery = query(collection(db, "rides"), where("status", "==", "open"));
 
   return onSnapshot(ridesQuery, (snapshot) => {
-    const allOpenRides = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Ride) }));
+    const allOpenRides = snapshot.docs
+      .map((d) => ({ id: d.id, ...(d.data() as Ride) }))
+      .filter((ride) => ride.availableSeats > 0);
     const filtered = normalizedDestination
       ? allOpenRides.filter((ride) =>
           ride.destination?.name?.toUpperCase().includes(normalizedDestination),
@@ -44,6 +46,46 @@ export function subscribeOpenRides(
 export async function updateRideStatus(rideId: string, status: Ride["status"]) {
   const rideRef = doc(db, "rides", rideId);
   return updateDoc(rideRef, { status, updatedAt: serverTimestamp() });
+}
+
+export async function updateRideAvailability(
+  rideId: string,
+  availableSeats: number,
+  status?: Ride["status"],
+  totalSeats?: number,
+) {
+  const rideRef = doc(db, "rides", rideId);
+  const payload: {
+    availableSeats: number;
+    updatedAt: ReturnType<typeof serverTimestamp>;
+    status?: Ride["status"];
+    totalSeats?: number;
+  } = {
+    availableSeats: Math.max(0, availableSeats),
+    updatedAt: serverTimestamp(),
+  };
+  if (status) {
+    payload.status = status;
+  }
+  if (totalSeats != null) {
+    payload.totalSeats = totalSeats;
+  }
+  return updateDoc(rideRef, payload);
+}
+
+export function getRideTotalSeats(ride: Ride) {
+  return ride.totalSeats ?? ride.availableSeats;
+}
+
+export function subscribeRide(rideId: string, cb: (ride: Ride | null) => void) {
+  const rideRef = doc(db, "rides", rideId);
+  return onSnapshot(rideRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      cb(null);
+      return;
+    }
+    cb({ id: snapshot.id, ...(snapshot.data() as Ride) });
+  });
 }
 
 export function subscribeDriverRides(driverId: string, cb: (rides: Ride[]) => void) {

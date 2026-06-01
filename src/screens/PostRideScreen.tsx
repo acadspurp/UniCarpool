@@ -151,6 +151,7 @@ export function PostRideScreen({ navigation }: any) {
         destination: { name: trip.destination.trim().toUpperCase(), lat: 0, lng: 0 },
         departureTime: mergeDeparture(trip.departureDate, trip.departureTime),
         availableSeats: trip.availableSeats,
+        totalSeats: trip.availableSeats,
         notes: trip.notes.trim(),
         status: "open",
         priceShareNote: `₱${trip.pricePerPerson.trim()} per person`,

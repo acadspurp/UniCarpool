@@ -153,6 +153,11 @@ export function RideDetailsActions({ ride, navigation }: Props) {
       showMessage("Already requested", "You already have a seat request on this ride.");
       return;
     }
+    const seatsLeft = Math.max(0, ride.availableSeats);
+    if (ride.status !== "open" || seatsLeft < 1) {
+      showMessage("Ride full", "This ride has no seats left.");
+      return;
+    }
     try {
       setBooking(true);
       const bookingRef = await requestBooking(rideId, ride.driverId, user.uid, 1);

@@ -28,6 +28,8 @@ export type Ride = {
   destination: { name: string; lat: number; lng: number };
   departureTime: string;
   availableSeats: number;
+  /** Total seats offered when posted; used to compute remaining after accepts. */
+  totalSeats?: number;
   priceShareNote?: string;
   notes?: string;
   vehicle?: VehicleInfo;

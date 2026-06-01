@@ -12,8 +12,13 @@ type Props = {
 };
 
 export function RideListCard({ ride, onPress, actionLabel = "Request seat" }: Props) {
+  const seatsLeft = Math.max(0, ride.availableSeats);
   const seatsLabel =
-    ride.availableSeats === 1 ? "1 seat left" : `${ride.availableSeats} seats left`;
+    seatsLeft === 0
+      ? "Full"
+      : seatsLeft === 1
+        ? "1 seat left"
+        : `${seatsLeft} seats left`;
 
   return (
     <View style={styles.card}>
@@ -41,7 +46,11 @@ export function RideListCard({ ride, onPress, actionLabel = "Request seat" }: Pr
         <Text style={styles.vehicle}>Vehicle: {formatVehicle(ride.vehicle)}</Text>
       ) : null}
 
-      <PrimaryButton label={actionLabel.toUpperCase()} onPress={onPress} />
+      <PrimaryButton
+        label={actionLabel.toUpperCase()}
+        onPress={onPress}
+        disabled={seatsLeft < 1 || ride.status !== "open"}
+      />
     </View>
   );
 }
