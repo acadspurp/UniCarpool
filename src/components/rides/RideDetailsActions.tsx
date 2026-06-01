@@ -5,7 +5,9 @@ import { PrimaryButton } from "../ui/PrimaryButton";
 import { OutlineButton } from "../ui/OutlineButton";
 import { useAuthStore } from "../../store/authStore";
 import {
+  acceptBookingRequest,
   isActiveBookingStatus,
+  rejectBookingRequest,
   requestBooking,
   subscribeRideBookings,
   subscribeRiderBookingForRide,
@@ -30,6 +32,7 @@ export function RideDetailsActions({ ride, navigation }: Props) {
   const [rideBookings, setRideBookings] = useState<Booking[]>([]);
   const [riderNames, setRiderNames] = useState<Record<string, string>>({});
   const [driverName, setDriverName] = useState("Driver");
+  const [actingBookingId, setActingBookingId] = useState<string | null>(null);
 
   const isDriver = user?.uid === ride.driverId;
   const rideId = ride.id ?? "";
@@ -98,6 +101,46 @@ export function RideDetailsActions({ ride, navigation }: Props) {
     });
   };
 
+  const handleAccept = async (booking: Booking) => {
+    if (!booking.id) return;
+    try {
+      setActingBookingId(booking.id);
+      await acceptBookingRequest(booking, ride);
+      showMessage("Request accepted", `${riderNames[booking.riderId] || "Rider"} is confirmed for this ride.`);
+    } catch (error: unknown) {
+      showMessage(
+        "Could not accept",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setActingBookingId(null);
+    }
+  };
+
+  const handleDecline = async (booking: Booking) => {
+    if (!booking.id) return;
+    const confirmed = await confirmAction({
+      title: "Decline request?",
+      message: `Decline ${riderNames[booking.riderId] || "this rider"}'s seat request?`,
+      confirmLabel: "Decline",
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      setActingBookingId(booking.id);
+      await rejectBookingRequest(booking.id);
+      showMessage("Request declined", "The rider has been notified in the app.");
+    } catch (error: unknown) {
+      showMessage(
+        "Could not decline",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setActingBookingId(null);
+    }
+  };
+
   const handleBook = async () => {
     if (!user || !rideId) return;
     if (isDriver) {
@@ -155,27 +198,61 @@ export function RideDetailsActions({ ride, navigation }: Props) {
       <View style={styles.wrap}>
         <SectionHeader
           title="Seat requests"
-          subtitle="Riders who requested a seat on this ride. Open chat by name to coordinate."
+          subtitle="Accept or decline riders who requested a seat, then message them to coordinate pickup."
         />
         {incomingRequests.length === 0 ? (
           <Text style={styles.hint}>No seat requests yet.</Text>
         ) : (
-          incomingRequests.map((booking) => (
-            <View key={booking.id} style={styles.requestRow}>
-              <View style={styles.requestInfo}>
-                <Text style={styles.requestName}>
-                  {riderNames[booking.riderId] || "Rider"}
-                </Text>
-                <Text style={styles.requestMeta}>
-                  {booking.seatsRequested} seat · {booking.status}
-                </Text>
+          incomingRequests.map((booking) => {
+            const isPending = booking.status === "pending";
+            const busy = actingBookingId === booking.id;
+
+            return (
+              <View key={booking.id} style={styles.requestCard}>
+                <View style={styles.requestHeader}>
+                  <View style={styles.requestInfo}>
+                    <Text style={styles.requestName}>
+                      {riderNames[booking.riderId] || "Rider"}
+                    </Text>
+                    <Text style={styles.requestMeta}>
+                      {booking.seatsRequested} seat{booking.seatsRequested === 1 ? "" : "s"} ·{" "}
+                      {booking.status}
+                    </Text>
+                  </View>
+                  {booking.status === "accepted" ? (
+                    <View style={styles.acceptedBadge}>
+                      <Text style={styles.acceptedBadgeText}>Accepted</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {isPending ? (
+                  <View style={styles.requestActions}>
+                    <View style={styles.actionBtn}>
+                      <PrimaryButton
+                        label="ACCEPT"
+                        onPress={() => handleAccept(booking)}
+                        loading={busy}
+                        disabled={actingBookingId != null && !busy}
+                      />
+                    </View>
+                    <View style={styles.actionBtn}>
+                      <OutlineButton
+                        label="DECLINE"
+                        danger
+                        onPress={() => handleDecline(booking)}
+                        disabled={busy || actingBookingId != null}
+                      />
+                    </View>
+                  </View>
+                ) : null}
+                <OutlineButton
+                  label="MESSAGE"
+                  onPress={() => openDriverChat(booking)}
+                  disabled={busy}
+                />
               </View>
-              <OutlineButton
-                label="MESSAGE"
-                onPress={() => openDriverChat(booking)}
-              />
-            </View>
-          ))
+            );
+          })
         )}
         <View style={styles.gap} />
         <OutlineButton label="DELETE RIDE" onPress={handleDelete} danger disabled={deleting} />
@@ -198,7 +275,11 @@ export function RideDetailsActions({ ride, navigation }: Props) {
       {hasActiveRequest && myBooking ? (
         <>
           <Text style={styles.statusNote}>
-            Status: {myBooking.status} — waiting for the driver.
+            {myBooking.status === "pending"
+              ? "Status: pending — waiting for the driver to accept."
+              : myBooking.status === "accepted"
+                ? "Status: accepted — you are confirmed for this ride."
+                : `Status: ${myBooking.status}`}
           </Text>
           <View style={styles.gap} />
           <OutlineButton label="OPEN CHAT" onPress={openRiderChat} />
@@ -213,16 +294,29 @@ const styles = StyleSheet.create({
   gap: { height: 10 },
   hint: { fontSize: 14, color: colors.textMuted, marginBottom: 8 },
   statusNote: { fontSize: 13, color: colors.textMuted, marginTop: 10, lineHeight: 18 },
-  requestRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    paddingVertical: 10,
+  requestCard: {
+    paddingVertical: 12,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: 10,
+  },
+  requestHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
   },
   requestInfo: { flex: 1, minWidth: 0 },
   requestName: { fontSize: 15, fontWeight: "700", color: colors.text },
   requestMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2, textTransform: "capitalize" },
+  acceptedBadge: {
+    backgroundColor: "#E8F8EF",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  acceptedBadgeText: { fontSize: 11, fontWeight: "700", color: colors.success },
+  requestActions: { flexDirection: "row", gap: 10 },
+  actionBtn: { flex: 1 },
 });

@@ -8,7 +8,7 @@ import { colors } from "../../theme/colors";
 
 export function MainAppHeader(_props: BottomTabHeaderProps) {
   const { isWide } = useResponsive();
-  const { openMenu, openNotifications, pendingDriverCount } = useMobileShell();
+  const { openMenu, openNotifications, unreadNotificationCount } = useMobileShell();
   const showMenu = !isWide;
 
   return (
@@ -43,10 +43,10 @@ export function MainAppHeader(_props: BottomTabHeaderProps) {
         accessibilityRole="button"
       >
         <AppIcon name="notifications-outline" size={22} color={colors.primary} />
-        {pendingDriverCount > 0 ? (
+        {unreadNotificationCount > 0 ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              {pendingDriverCount > 9 ? "9+" : pendingDriverCount}
+              {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
             </Text>
           </View>
         ) : null}
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.danger,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,

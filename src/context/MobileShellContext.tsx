@@ -1,6 +1,8 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { useAuthStore } from "../store/authStore";
 import { useBookingActivity } from "../hooks/useBookingActivity";
-import type { Booking } from "../types/models";
+import { useNotificationInbox } from "../hooks/useNotificationInbox";
+import type { NotificationLogItem } from "../utils/notificationLogs";
 
 type MobileShellContextValue = {
   menuOpen: boolean;
@@ -9,17 +11,29 @@ type MobileShellContextValue = {
   closeMenu: () => void;
   openNotifications: () => void;
   closeNotifications: () => void;
-  riderBookings: Booking[];
-  driverBookings: Booking[];
-  pendingDriverCount: number;
+  unreadNotificationCount: number;
+  visibleNotifications: NotificationLogItem[];
+  markNotificationRead: (ids: string[]) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  isNotificationUnread: (id: string) => boolean;
 };
 
 const MobileShellContext = createContext<MobileShellContextValue | null>(null);
 
 export function MobileShellProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { riderBookings, driverBookings, pendingDriverCount } = useBookingActivity();
+  const { riderBookings, driverBookings } = useBookingActivity();
+  const {
+    visibleLogs,
+    unreadCount,
+    markAsRead,
+    markAllVisibleAsRead,
+    deleteNotification,
+    isUnread,
+  } = useNotificationInbox(user?.uid, riderBookings, driverBookings);
 
   const value = useMemo(
     () => ({
@@ -29,11 +43,23 @@ export function MobileShellProvider({ children }: { children: ReactNode }) {
       closeMenu: () => setMenuOpen(false),
       openNotifications: () => setNotificationsOpen(true),
       closeNotifications: () => setNotificationsOpen(false),
-      riderBookings,
-      driverBookings,
-      pendingDriverCount,
+      unreadNotificationCount: unreadCount,
+      visibleNotifications: visibleLogs,
+      markNotificationRead: markAsRead,
+      markAllNotificationsRead: markAllVisibleAsRead,
+      deleteNotification,
+      isNotificationUnread: isUnread,
     }),
-    [menuOpen, notificationsOpen, riderBookings, driverBookings, pendingDriverCount],
+    [
+      menuOpen,
+      notificationsOpen,
+      unreadCount,
+      visibleLogs,
+      markAsRead,
+      markAllVisibleAsRead,
+      deleteNotification,
+      isUnread,
+    ],
   );
 
   return <MobileShellContext.Provider value={value}>{children}</MobileShellContext.Provider>;

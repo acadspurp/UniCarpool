@@ -10,7 +10,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Booking } from "../types/models";
+import { updateRideStatus } from "./rides";
+import { Booking, Ride } from "../types/models";
 
 const ACTIVE_BOOKING_STATUSES: Booking["status"][] = ["pending", "accepted"];
 
@@ -59,6 +60,44 @@ export async function updateBookingStatus(
     status,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function countAcceptedSeatsForRide(rideId: string) {
+  const acceptedQuery = query(
+    collection(db, "bookings"),
+    where("rideId", "==", rideId),
+    where("status", "==", "accepted"),
+  );
+  const snapshot = await getDocs(acceptedQuery);
+  return snapshot.docs.reduce(
+    (sum, docSnap) => sum + (docSnap.data().seatsRequested as number),
+    0,
+  );
+}
+
+export async function acceptBookingRequest(booking: Booking, ride: Ride) {
+  if (!booking.id || !ride.id) {
+    throw new Error("Invalid booking.");
+  }
+  if (booking.status !== "pending") {
+    throw new Error("This request is no longer pending.");
+  }
+
+  const seatsTaken = await countAcceptedSeatsForRide(ride.id);
+  const seatsAfter = seatsTaken + booking.seatsRequested;
+  if (seatsAfter > ride.availableSeats) {
+    throw new Error("Not enough seats left on this ride.");
+  }
+
+  await updateBookingStatus(booking.id, "accepted");
+
+  if (seatsAfter >= ride.availableSeats) {
+    await updateRideStatus(ride.id, "full");
+  }
+}
+
+export async function rejectBookingRequest(bookingId: string) {
+  return updateBookingStatus(bookingId, "rejected");
 }
 
 export function subscribeMyBookings(uid: string, cb: (bookings: Booking[]) => void) {

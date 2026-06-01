@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { subscribeDriverBookings, subscribeMyBookings } from "../services/bookings";
 import type { Booking } from "../types/models";
@@ -22,10 +22,5 @@ export function useBookingActivity() {
     };
   }, [user]);
 
-  const pendingDriverCount = useMemo(
-    () => driverBookings.filter((b) => b.status === "pending").length,
-    [driverBookings],
-  );
-
-  return { riderBookings, driverBookings, pendingDriverCount };
+  return { riderBookings, driverBookings };
 }
