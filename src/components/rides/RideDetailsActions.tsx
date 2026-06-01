@@ -6,6 +6,7 @@ import { OutlineButton } from "../ui/OutlineButton";
 import { useAuthStore } from "../../store/authStore";
 import {
   acceptBookingRequest,
+  countAcceptedSeatsFromBookings,
   isActiveBookingStatus,
   rejectBookingRequest,
   requestBooking,
@@ -54,8 +55,8 @@ export function RideDetailsActions({ ride, navigation }: Props) {
 
   useEffect(() => {
     if (!isDriver || !rideId) return;
-    return subscribeRideBookings(rideId, setRideBookings);
-  }, [isDriver, rideId]);
+    return subscribeRideBookings(rideId, ride.driverId, setRideBookings);
+  }, [isDriver, rideId, ride.driverId]);
 
   useEffect(() => {
     if (isDriver) return;
@@ -105,7 +106,8 @@ export function RideDetailsActions({ ride, navigation }: Props) {
     if (!booking.id) return;
     try {
       setActingBookingId(booking.id);
-      await acceptBookingRequest(booking, ride);
+      const seatsTaken = countAcceptedSeatsFromBookings(rideBookings);
+      await acceptBookingRequest(booking, ride, seatsTaken);
       showMessage("Request accepted", `${riderNames[booking.riderId] || "Rider"} is confirmed for this ride.`);
     } catch (error: unknown) {
       showMessage(

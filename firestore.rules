@@ -7,11 +7,21 @@ service cloud.firestore {
 
     function isCampusVerified() {
       return request.auth.token.campusVerified == true
-        || request.auth.token.email.matches(".*@iskolarngbayan\\.pup\\.edu\\.ph$");
+        || (
+          request.auth.token.email != null
+          && request.auth.token.email.lower().matches('.*@iskolarngbayan\\.pup\\.edu\\.ph$')
+        );
     }
 
     function isVerifiedCampusUser() {
       return isSignedIn() && isCampusVerified();
+    }
+
+    function bookingCoreUnchanged() {
+      return request.resource.data.rideId == resource.data.rideId
+        && request.resource.data.driverId == resource.data.driverId
+        && request.resource.data.riderId == resource.data.riderId
+        && request.resource.data.seatsRequested == resource.data.seatsRequested;
     }
 
     match /users/{uid} {
@@ -24,7 +34,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isVerifiedCampusUser()
         && request.resource.data.driverId == request.auth.uid;
-      allow update: if isVerifiedCampusUser()
+      allow update: if isSignedIn()
         && resource.data.driverId == request.auth.uid;
       allow delete: if false;
     }
@@ -32,14 +42,24 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if isSignedIn()
         && (resource.data.driverId == request.auth.uid || resource.data.riderId == request.auth.uid);
+
       allow create: if isVerifiedCampusUser()
         && request.resource.data.riderId == request.auth.uid
         && request.resource.data.riderId != request.resource.data.driverId;
-      allow update: if isVerifiedCampusUser()
-        && (
-          resource.data.driverId == request.auth.uid ||
-          resource.data.riderId == request.auth.uid
-        );
+
+      // Driver: accept or decline pending requests on their rides
+      allow update: if isSignedIn()
+        && resource.data.driverId == request.auth.uid
+        && resource.data.status == 'pending'
+        && bookingCoreUnchanged()
+        && request.resource.data.status in ['accepted', 'rejected'];
+
+      // Rider: cancel own booking
+      allow update: if isSignedIn()
+        && resource.data.riderId == request.auth.uid
+        && bookingCoreUnchanged()
+        && request.resource.data.status == 'cancelled';
+
       allow delete: if false;
     }
 

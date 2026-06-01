@@ -62,20 +62,17 @@ export async function updateBookingStatus(
   });
 }
 
-export async function countAcceptedSeatsForRide(rideId: string) {
-  const acceptedQuery = query(
-    collection(db, "bookings"),
-    where("rideId", "==", rideId),
-    where("status", "==", "accepted"),
-  );
-  const snapshot = await getDocs(acceptedQuery);
-  return snapshot.docs.reduce(
-    (sum, docSnap) => sum + (docSnap.data().seatsRequested as number),
-    0,
-  );
+export function countAcceptedSeatsFromBookings(bookings: Booking[]) {
+  return bookings
+    .filter((b) => b.status === "accepted")
+    .reduce((sum, b) => sum + b.seatsRequested, 0);
 }
 
-export async function acceptBookingRequest(booking: Booking, ride: Ride) {
+export async function acceptBookingRequest(
+  booking: Booking,
+  ride: Ride,
+  acceptedSeatsOnRide: number,
+) {
   if (!booking.id || !ride.id) {
     throw new Error("Invalid booking.");
   }
@@ -83,8 +80,7 @@ export async function acceptBookingRequest(booking: Booking, ride: Ride) {
     throw new Error("This request is no longer pending.");
   }
 
-  const seatsTaken = await countAcceptedSeatsForRide(ride.id);
-  const seatsAfter = seatsTaken + booking.seatsRequested;
+  const seatsAfter = acceptedSeatsOnRide + booking.seatsRequested;
   if (seatsAfter > ride.availableSeats) {
     throw new Error("Not enough seats left on this ride.");
   }
@@ -114,8 +110,16 @@ export function subscribeDriverBookings(driverId: string, cb: (bookings: Booking
   });
 }
 
-export function subscribeRideBookings(rideId: string, cb: (bookings: Booking[]) => void) {
-  const bookingsQuery = query(collection(db, "bookings"), where("rideId", "==", rideId));
+export function subscribeRideBookings(
+  rideId: string,
+  driverId: string,
+  cb: (bookings: Booking[]) => void,
+) {
+  const bookingsQuery = query(
+    collection(db, "bookings"),
+    where("rideId", "==", rideId),
+    where("driverId", "==", driverId),
+  );
   return onSnapshot(bookingsQuery, (snapshot) => {
     cb(snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Booking) })));
   });

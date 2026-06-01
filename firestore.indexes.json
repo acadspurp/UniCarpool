@@ -32,6 +32,14 @@
         { "fieldPath": "rideId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "rideId", "order": "ASCENDING" },
+        { "fieldPath": "driverId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
