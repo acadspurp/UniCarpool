@@ -4,7 +4,9 @@ import { ScreenContainer } from "../components/ScreenContainer";
 import { EmptyState } from "../components/ui/EmptyState";
 import { OutlineButton } from "../components/ui/OutlineButton";
 import { useAuthStore } from "../store/authStore";
-import { subscribeMyBookings } from "../services/bookings";
+import { isActiveBookingStatus, subscribeMyBookings } from "../services/bookings";
+import { bookingChatId } from "../services/chat";
+import { getProfileOnce } from "../services/profile";
 import { subscribeDriverRides } from "../services/rides";
 import { Booking, Ride } from "../types/models";
 import { formatDepartureLabel } from "../utils/date";
@@ -92,18 +94,51 @@ export function MyRidesScreen({ navigation }: any) {
         />
       ) : (
         visibleBookings.map((booking) => (
-          <View key={booking.id} style={[styles.card, styles.bookingCard]}>
-            <Text style={styles.route}>Booking · {booking.seatsRequested} seat(s)</Text>
-            <Text style={styles.meta}>
-              Ride ID: {booking.rideId ? `${booking.rideId.slice(0, 8)}…` : "—"}
-            </Text>
-            <View style={[styles.badge, statusStyle(booking.status)]}>
-              <Text style={styles.badgeText}>{booking.status}</Text>
-            </View>
-          </View>
+          <BookingCard key={booking.id} booking={booking} navigation={navigation} />
         ))
       )}
     </ScreenContainer>
+  );
+}
+
+function BookingCard({
+  booking,
+  navigation,
+}: {
+  booking: Booking;
+  navigation: { navigate: (screen: string, params?: object) => void };
+}) {
+  const [driverName, setDriverName] = useState("Driver");
+
+  useEffect(() => {
+    getProfileOnce(booking.driverId).then((profile) => {
+      setDriverName(profile?.fullName?.trim() || "Driver");
+    });
+  }, [booking.driverId]);
+
+  const openChat = () => {
+    if (!booking.id || !booking.rideId) return;
+    navigation.navigate("Chat", {
+      chatId: bookingChatId(booking.rideId, booking.id),
+      peerName: driverName,
+    });
+  };
+
+  return (
+    <View style={[styles.card, styles.bookingCard]}>
+      <Text style={styles.route}>Booking · {booking.seatsRequested} seat(s)</Text>
+      <Text style={styles.meta}>
+        Ride ID: {booking.rideId ? `${booking.rideId.slice(0, 8)}…` : "—"}
+      </Text>
+      <View style={styles.cardFooter}>
+        <View style={[styles.badge, statusStyle(booking.status)]}>
+          <Text style={styles.badgeText}>{booking.status}</Text>
+        </View>
+        {isActiveBookingStatus(booking.status) ? (
+          <OutlineButton label="OPEN CHAT" onPress={openChat} />
+        ) : null}
+      </View>
+    </View>
   );
 }
 

@@ -1,4 +1,4 @@
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { Profile } from "../types/models";
 
@@ -13,6 +13,12 @@ export async function createOrUpdateProfile(userData: Partial<Profile> & { uid: 
     },
     { merge: true },
   );
+}
+
+export async function getProfileOnce(uid: string): Promise<Profile | null> {
+  const snapshot = await getDoc(doc(db, "users", uid));
+  if (!snapshot.exists()) return null;
+  return { uid, ...(snapshot.data() as Profile) };
 }
 
 export function subscribeProfile(uid: string, cb: (profile: Profile | null) => void) {

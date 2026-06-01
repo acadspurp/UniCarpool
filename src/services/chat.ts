@@ -11,6 +11,10 @@ import {
 import { db } from "./firebase";
 import { ChatMessage } from "../types/models";
 
+export function bookingChatId(rideId: string, bookingId: string) {
+  return `${rideId}_${bookingId}`;
+}
+
 export async function ensureChat(
   chatId: string,
   rideId: string,

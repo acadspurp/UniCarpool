@@ -11,8 +11,7 @@ import {
   View,
 } from "react-native";
 import { useMobileShell } from "../../context/MobileShellContext";
-import { useAuthStore } from "../../store/authStore";
-import { subscribeMyBookings, subscribeDriverBookings } from "../../services/bookings";
+import { getProfileOnce } from "../../services/profile";
 import { Booking } from "../../types/models";
 import { colors } from "../../theme/colors";
 
@@ -27,7 +26,7 @@ type LogItem = {
   sortKey: string;
 };
 
-function bookingToLog(booking: Booking, asDriver: boolean): LogItem {
+function bookingToLog(booking: Booking, asDriver: boolean, riderName?: string): LogItem {
   const statusLabels: Record<Booking["status"], string> = {
     pending: asDriver ? "New seat request" : "Request sent",
     accepted: asDriver ? "You accepted a rider" : "Request accepted",
@@ -37,12 +36,14 @@ function bookingToLog(booking: Booking, asDriver: boolean): LogItem {
   };
   const detailLabels: Record<Booking["status"], string> = {
     pending: asDriver
-      ? "A rider requested a seat on your ride."
+      ? `${riderName || "A rider"} requested a seat on your ride.`
       : "Waiting for the driver to respond.",
     accepted: asDriver
-      ? "A rider is confirmed for your trip."
+      ? `${riderName || "A rider"} is confirmed for your trip.`
       : "You are confirmed for this carpool.",
-    rejected: asDriver ? "You declined a seat request." : "The driver declined your request.",
+    rejected: asDriver
+      ? `You declined ${riderName || "a rider"}'s request.`
+      : "The driver declined your request.",
     cancelled: "This booking was cancelled.",
     completed: "This trip is marked completed.",
   };
@@ -65,19 +66,22 @@ function toSortKey(value: unknown): string {
   return String(value);
 }
 
-function mergeLogs(rider: Booking[], driver: Booking[]): LogItem[] {
+function mergeLogs(
+  rider: Booking[],
+  driver: Booking[],
+  riderNames: Record<string, string>,
+): LogItem[] {
   const items = [
     ...rider.map((b) => bookingToLog(b, false)),
-    ...driver.map((b) => bookingToLog(b, true)),
+    ...driver.map((b) => bookingToLog(b, true, riderNames[b.riderId])),
   ];
   return items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 }
 
 export function NotificationsPanel() {
-  const { notificationsOpen, closeNotifications } = useMobileShell();
-  const { user } = useAuthStore();
-  const [riderBookings, setRiderBookings] = useState<Booking[]>([]);
-  const [driverBookings, setDriverBookings] = useState<Booking[]>([]);
+  const { notificationsOpen, closeNotifications, riderBookings, driverBookings } =
+    useMobileShell();
+  const [riderNames, setRiderNames] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);
   const slideY = useRef(new Animated.Value(SLIDE_DISTANCE)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -133,18 +137,30 @@ export function NotificationsPanel() {
   }, [notificationsOpen, animateOpen]);
 
   useEffect(() => {
-    if (!notificationsOpen || !user) return;
-    const unsubRider = subscribeMyBookings(user.uid, setRiderBookings);
-    const unsubDriver = subscribeDriverBookings(user.uid, setDriverBookings);
+    const riderIds = [...new Set(driverBookings.map((b) => b.riderId))];
+    if (riderIds.length === 0) {
+      setRiderNames({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const names: Record<string, string> = {};
+      await Promise.all(
+        riderIds.map(async (uid) => {
+          const profile = await getProfileOnce(uid);
+          names[uid] = profile?.fullName?.trim() || "Rider";
+        }),
+      );
+      if (!cancelled) setRiderNames(names);
+    })();
     return () => {
-      unsubRider();
-      unsubDriver();
+      cancelled = true;
     };
-  }, [notificationsOpen, user]);
+  }, [driverBookings]);
 
   const logs = useMemo(
-    () => mergeLogs(riderBookings, driverBookings),
-    [riderBookings, driverBookings],
+    () => mergeLogs(riderBookings, driverBookings, riderNames),
+    [riderBookings, driverBookings, riderNames],
   );
 
   if (!mounted) return null;

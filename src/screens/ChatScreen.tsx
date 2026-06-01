@@ -15,6 +15,7 @@ import { sendMessage, subscribeToChat } from "../services/chat";
 import { ChatMessage } from "../types/models";
 import { TextField } from "../components/ui/TextField";
 import { PrimaryButton } from "../components/ui/PrimaryButton";
+import { showMessage } from "../utils/alert";
 import { colors } from "../theme/colors";
 
 /** Space for docked composer (input + send button + padding). */
@@ -27,8 +28,10 @@ export function ChatScreen({ route }: any) {
   const { height: windowHeight } = useWindowDimensions();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const chatId = route.params?.chatId;
+  const chatId = route.params?.chatId as string | undefined;
+  const peerName = (route.params?.peerName as string | undefined)?.trim() || "Chat";
 
   const bottomInset = Math.max(insets.bottom, Platform.OS === "web" ? 8 : 12);
   const listBottomPad = COMPOSER_HEIGHT + bottomInset;
@@ -51,13 +54,27 @@ export function ChatScreen({ route }: any) {
   }, [messages.length, messages[messages.length - 1]?.id]);
 
   const onSend = async () => {
-    if (!user || !chatId || !text.trim()) return;
-    await sendMessage(chatId, user.uid, text.trim());
-    setText("");
+    if (!user || !chatId || !text.trim() || sending) return;
+    const body = text.trim();
+    try {
+      setSending(true);
+      await sendMessage(chatId, user.uid, body);
+      setText("");
+    } catch (error: unknown) {
+      showMessage(
+        "Message not sent",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   const body = (
     <>
+      <View style={styles.peerHeader}>
+        <Text style={styles.peerName}>{peerName}</Text>
+      </View>
       <FlatList
         ref={listRef}
         style={styles.list}
@@ -92,7 +109,7 @@ export function ChatScreen({ route }: any) {
           onChangeText={setText}
           style={styles.input}
         />
-        <PrimaryButton label="SEND" onPress={onSend} />
+        <PrimaryButton label="SEND" onPress={onSend} loading={sending} disabled={!chatId} />
       </View>
     </>
   );
@@ -128,6 +145,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  peerHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  peerName: { fontSize: 17, fontWeight: "800", color: colors.text },
   list: {
     flex: 1,
     ...(Platform.OS === "web"

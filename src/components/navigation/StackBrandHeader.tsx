@@ -7,7 +7,7 @@ import { colors } from "../../theme/colors";
 
 export function StackBrandHeader() {
   const navigation = useNavigation();
-  const { openNotifications } = useMobileShell();
+  const { openNotifications, pendingDriverCount } = useMobileShell();
   const canGoBack = navigation.canGoBack();
 
   return (
@@ -42,6 +42,13 @@ export function StackBrandHeader() {
         accessibilityRole="button"
       >
         <AppIcon name="notifications-outline" size={22} color={colors.primary} />
+        {pendingDriverCount > 0 ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {pendingDriverCount > 9 ? "9+" : pendingDriverCount}
+            </Text>
+          </View>
+        ) : null}
       </Pressable>
     </View>
   );
@@ -74,4 +81,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  badge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: { fontSize: 10, fontWeight: "800", color: colors.textOnPrimary },
 });

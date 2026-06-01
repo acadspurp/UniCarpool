@@ -5,19 +5,28 @@ type Props = {
   label: string;
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
   variant?: "primary" | "accent";
 };
 
-export function PrimaryButton({ label, onPress, loading, variant = "primary" }: Props) {
+export function PrimaryButton({
+  label,
+  onPress,
+  loading,
+  disabled,
+  variant = "primary",
+}: Props) {
+  const isDisabled = loading || disabled;
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
         variant === "accent" ? styles.accent : styles.primary,
-        pressed && styles.pressed,
-        loading && styles.disabled,
+        pressed && !isDisabled && styles.pressed,
+        isDisabled && styles.disabled,
       ]}
     >
       {loading ? (
